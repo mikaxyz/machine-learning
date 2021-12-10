@@ -52,12 +52,12 @@ type alias Config =
 
 type Layer
     = Layer
-        { inputs : Int
-        , outputs : Int
+        { inputCount : Int
+        , outputCount : Int
         , weights : Matrix
         , biases : Matrix
-        , inputValues : Matrix -- TODO: RENAME
-        , values : Matrix -- TODO: RENAME
+        , inputs : Matrix
+        , outputs : Matrix
         , activationFunction : Float -> Float
         }
 
@@ -112,33 +112,33 @@ createLayer :
     -> Int
     -> Int
     -> ( Layer, Random.Seed )
-createLayer randomSeed activationFunction inputs outputs =
+createLayer randomSeed activationFunction inputCount outputCount =
     let
         log =
             logger True
 
         ( randomWeights, seed1 ) =
             Random.step
-                (Random.list (inputs * outputs) (Random.float -1 1))
+                (Random.list (inputCount * outputCount) (Random.float -1 1))
                 randomSeed
                 |> Tuple.mapFirst Array.fromList
 
         ( randomBiases, seedOut ) =
             Random.step
-                (Random.list (inputs * outputs) (Random.float -1 1))
+                (Random.list (inputCount * outputCount) (Random.float -1 1))
                 seed1
                 |> Tuple.mapFirst Array.fromList
     in
     ( Layer
-        { inputs = inputs
-        , outputs = outputs
-        , inputValues = Matrix.create ( inputs, 1 )
-        , values = Matrix.create ( outputs, 1 )
+        { inputCount = inputCount
+        , outputCount = outputCount
+        , inputs = Matrix.create ( inputCount, 1 )
+        , outputs = Matrix.create ( outputCount, 1 )
         , weights =
-            Matrix.create ( outputs, inputs )
+            Matrix.create ( outputCount, inputCount )
                 |> Matrix.indexedMap
                     (\r c _ ->
-                        case Array.get (r * inputs + c) randomWeights of
+                        case Array.get (r * inputCount + c) randomWeights of
                             Just rnd ->
                                 rnd
 
@@ -146,10 +146,10 @@ createLayer randomSeed activationFunction inputs outputs =
                                 log "RANDOM WEIGHT MISSING!" 0
                     )
         , biases =
-            Matrix.create ( outputs, 1 )
+            Matrix.create ( outputCount, 1 )
                 |> Matrix.indexedMap
                     (\r c _ ->
-                        case Array.get (r * inputs + c) randomBiases of
+                        case Array.get (r * inputCount + c) randomBiases of
                             Just rnd ->
                                 rnd
 
@@ -170,14 +170,14 @@ addLayer outputs (NeuralNetwork neuralNetwork) =
                 ( newLayer, randomSeed1 ) =
                     createLayer neuralNetwork.randomSeed
                         neuralNetwork.activationFunction
-                        currentLayer.inputs
+                        currentLayer.inputCount
                         outputs
 
                 ( existingLayer, randomSeed ) =
                     createLayer randomSeed1
                         neuralNetwork.activationFunction
                         outputs
-                        currentLayer.outputs
+                        currentLayer.outputCount
             in
             NeuralNetwork
                 { neuralNetwork
@@ -203,18 +203,18 @@ predict config (NeuralNetwork neuralNetwork) =
                 |> log "------------- PREDICT"
     in
     List.foldl
-        (\(Layer layer) ( index, values ) ->
+        (\(Layer layer) ( index, inputs_ ) ->
             let
                 _ =
-                    log ("VALUES LAYER" ++ String.fromInt index) values
+                    log ("INPUTS LAYER" ++ String.fromInt index) inputs_
 
                 _ =
                     log "layer.weights" layer.weights
 
                 output : Matrix
                 output =
-                    Matrix.mul layer.weights values
-                        |> log "VALUES AFTER WEIGHT"
+                    Matrix.mul layer.weights inputs_
+                        |> log "INPUTS AFTER WEIGHT"
                         |> Matrix.add (log "layer.biases" layer.biases)
                         |> Matrix.map neuralNetwork.activationFunction
                         |> log ("OUTPUT LAYER" ++ String.fromInt index)
@@ -280,7 +280,7 @@ calculateValues config (NeuralNetwork neuralNetwork) =
                                         |> Matrix.add layer.biases
                                         |> Matrix.map neuralNetwork.activationFunction
                             in
-                            ( Layer { layer | inputValues = inputs_, values = outputs } :: layers, outputs )
+                            ( Layer { layer | inputs = inputs_, outputs = outputs } :: layers, outputs )
                         )
                         ( [], inputs )
                     |> Tuple.first
@@ -318,7 +318,7 @@ trainWithValues trainingData (NeuralNetwork neuralNetwork) =
             neuralNetwork.layers
                 |> List.indexedMap
                     (\index (Layer layer) ->
-                        ( index, layer.inputValues )
+                        ( index, layer.inputs )
                     )
                 |> log ">>>>>>>>>>>>>>>>"
     in
@@ -356,10 +356,10 @@ trainLayer learningRate errors_ (Layer layer) =
             log "------------------ TRAIN LAYER ---------------------" 0
 
         _ =
-            log "INPUTS" (Matrix.toList layer.inputValues)
+            log "INPUTS" (Matrix.toList layer.inputs)
 
         _ =
-            log "OUTPUTS" (Matrix.toList layer.values)
+            log "OUTPUTS" (Matrix.toList layer.outputs)
 
         _ =
             log "errors_" (Matrix.toList errors_)
@@ -385,7 +385,7 @@ trainLayer learningRate errors_ (Layer layer) =
 
         gradients : Matrix
         gradients =
-            layer.values
+            layer.outputs
                 |> Matrix.map deActivationFunction
                 |> Matrix.hadamard errors_
                 |> Matrix.scale learningRate
@@ -393,7 +393,7 @@ trainLayer learningRate errors_ (Layer layer) =
         deltas : Matrix
         deltas =
             Matrix.mul gradients
-                (Matrix.transpose layer.inputValues)
+                (Matrix.transpose layer.inputs)
 
         weights : Matrix
         weights =
