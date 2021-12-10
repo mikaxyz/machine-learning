@@ -206,7 +206,7 @@ predict config (NeuralNetwork neuralNetwork) =
                     Matrix.mul layer.weights values
                         |> log "VALUES AFTER WEIGHT"
                         |> Matrix.add (log "layer.biases" layer.biases)
-                        |> Matrix.map (List.map neuralNetwork.activationFunction)
+                        |> Matrix.map neuralNetwork.activationFunction
                         |> log ("OUTPUT LAYER" ++ String.fromInt index)
             in
             ( index + 1, output )
@@ -269,7 +269,7 @@ calculateValues config (NeuralNetwork neuralNetwork) =
                                 outputs =
                                     Matrix.mul layer.weights inputs_
                                         |> Matrix.add layer.biases
-                                        |> Matrix.map (List.map neuralNetwork.activationFunction)
+                                        |> Matrix.map neuralNetwork.activationFunction
                             in
                             ( Layer { layer | inputValues = inputs_, values = outputs } :: layers, outputs )
                         )
@@ -378,7 +378,7 @@ trainLayer learningRate errors_ (Layer layer) =
         gradients : Matrix
         gradients =
             layer.values
-                |> Matrix.map (List.map deActivationFunction)
+                |> Matrix.map deActivationFunction
                 |> Matrix.hadamard errors_
                 |> Matrix.scale learningRate
 

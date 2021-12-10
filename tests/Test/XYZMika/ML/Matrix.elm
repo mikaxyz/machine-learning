@@ -26,10 +26,8 @@ suite =
             \_ ->
                 let
                     ( m1, m2 ) =
-                        ( Matrix.create ( 1, 4 )
-                            |> Matrix.map (\_ -> [ 4, 3, 2, 1 ])
-                        , Matrix.create ( 1, 4 )
-                            |> Matrix.map (\_ -> [ 4, 3, 2, 1 ])
+                        ( Matrix.fromList ( 1, 4 ) [ [ 4, 3, 2, 1 ] ]
+                        , Matrix.fromList ( 1, 4 ) [ [ 4, 3, 2, 1 ] ]
                         )
 
                     result =
@@ -44,10 +42,8 @@ suite =
             \_ ->
                 let
                     ( m1, m2 ) =
-                        ( Matrix.create ( 1, 4 )
-                            |> Matrix.map (\_ -> [ 8, 6, 4, 2 ])
-                        , Matrix.create ( 1, 4 )
-                            |> Matrix.map (\_ -> [ 4, 3, 2, 1 ])
+                        ( Matrix.fromList ( 1, 4 ) [ [ 8, 6, 4, 2 ] ]
+                        , Matrix.fromList ( 1, 4 ) [ [ 4, 3, 2, 1 ] ]
                         )
 
                     result =
@@ -124,8 +120,10 @@ suite =
             \_ ->
                 let
                     result =
-                        Matrix.create ( 2, 6 )
-                            |> Matrix.map (\_ -> [ 1, 2, 3, 4 ])
+                        [ [ 1, 2, 3, 4 ]
+                        , [ 1, 2, 3, 4 ]
+                        ]
+                            |> Matrix.fromList ( 2, 6 )
                             |> Matrix.toList
 
                     expected =

@@ -30,50 +30,39 @@ fromList : ( Int, Int ) -> List (List Float) -> Matrix
 fromList ( rows, columns ) data =
     let
         data_ =
-            data |> Array.fromList
+            data
+                |> Array.fromList
+                |> Array.map Array.fromList
     in
     create ( rows, columns )
         |> indexedMap
-            (\index existing ->
-                Array.get index data_
+            (\rowIndex colIndex existing ->
+                Array.get rowIndex data_
+                    |> Maybe.andThen (Array.get colIndex)
                     |> Maybe.withDefault existing
             )
 
 
-indexedMap : (Int -> List Float -> List Float) -> Matrix -> Matrix
+indexedMap : (Int -> Int -> Float -> Float) -> Matrix -> Matrix
 indexedMap f (Matrix m) =
-    let
-        join : List Float -> List Float -> List Float
-        join new existing =
-            new ++ List.drop (List.length new) existing
-    in
     Matrix
         { m
             | data =
-                List.map2
-                    join
-                    (m.data |> List.indexedMap f)
+                List.indexedMap
+                    (\rowIndex row ->
+                        row
+                            |> List.indexedMap
+                                (\colIndex x ->
+                                    f rowIndex colIndex x
+                                )
+                    )
                     m.data
         }
 
 
-map : (List Float -> List Float) -> Matrix -> Matrix
+map : (Float -> Float) -> Matrix -> Matrix
 map f (Matrix m) =
-    -- TODO: Make this map over values instead.
-    -- Are we using it any other way?
-    let
-        join : List Float -> List Float -> List Float
-        join new existing =
-            new ++ List.drop (List.length new) existing
-    in
-    Matrix
-        { m
-            | data =
-                List.map2
-                    join
-                    (m.data |> List.map f)
-                    m.data
-        }
+    Matrix { m | data = List.map (List.map f) m.data }
 
 
 toList : Matrix -> List (List Float)
