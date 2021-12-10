@@ -27,7 +27,7 @@ suite =
                             |> NeuralNetwork.predict { inputs = [ 0, 1, 2 ] }
                             |> Matrix.toList
                 in
-                Expect.equal [ [ 0.12059094529996697 ] ] output
+                Expect.equal [ [ 0.31407280243810826 ] ] output
         , test "allows adding layers" <|
             \_ ->
                 let

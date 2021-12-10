@@ -9,6 +9,7 @@ module XYZMika.ML.NeuralNetwork exposing
     , train
     )
 
+import Array
 import Random
 import XYZMika.ML.Matrix as Matrix exposing (Matrix)
 
@@ -77,13 +78,6 @@ deSigmoid y =
     y * (1 - y)
 
 
-randomValues : Int -> Random.Seed -> ( List Float, Random.Seed )
-randomValues size seed =
-    Random.step
-        (Random.list size (Random.float -1 1))
-        seed
-
-
 create :
     { inputs : Int
     , outputs : Int
@@ -120,20 +114,20 @@ createLayer :
     -> ( Layer, Random.Seed )
 createLayer randomSeed activationFunction inputs outputs =
     let
-        ( weights, seed1 ) =
-            List.repeat outputs []
-                |> List.foldl
-                    (\_ ( acc, seed ) ->
-                        let
-                            ( a, seed_ ) =
-                                randomValues inputs seed
-                        in
-                        ( a :: acc, seed_ )
-                    )
-                    ( [], randomSeed )
+        log =
+            logger True
 
-        ( biases, seedOut ) =
-            randomValues outputs seed1
+        ( randomWeights, seed1 ) =
+            Random.step
+                (Random.list (inputs * outputs) (Random.float -1 1))
+                randomSeed
+                |> Tuple.mapFirst Array.fromList
+
+        ( randomBiases, seedOut ) =
+            Random.step
+                (Random.list (inputs * outputs) (Random.float -1 1))
+                seed1
+                |> Tuple.mapFirst Array.fromList
     in
     ( Layer
         { inputs = inputs
@@ -141,11 +135,27 @@ createLayer randomSeed activationFunction inputs outputs =
         , inputValues = Matrix.create ( inputs, 1 )
         , values = Matrix.create ( outputs, 1 )
         , weights =
-            --Debug.log "CREATED WITH WEIGHTS" <|
-            Matrix.fromList ( outputs, inputs ) weights
+            Matrix.create ( outputs, inputs )
+                |> Matrix.indexedMap
+                    (\r c _ ->
+                        case Array.get (r * inputs + c) randomWeights of
+                            Just rnd ->
+                                rnd
+
+                            Nothing ->
+                                log "RANDOM WEIGHT MISSING!" 0
+                    )
         , biases =
-            --Debug.log "CREATED WITH BIASES" <|
-            Matrix.fromList ( outputs, 1 ) [ biases ]
+            Matrix.create ( outputs, 1 )
+                |> Matrix.indexedMap
+                    (\r c _ ->
+                        case Array.get (r * inputs + c) randomBiases of
+                            Just rnd ->
+                                rnd
+
+                            Nothing ->
+                                log "RANDOM BIAS MISSING!" 0
+                    )
         , activationFunction = activationFunction
         }
     , seedOut
@@ -189,7 +199,7 @@ predict config (NeuralNetwork neuralNetwork) =
             logger False
 
         inputs =
-            Matrix.fromList ( List.length config.inputs, 1 ) (config.inputs |> List.map List.singleton)
+            Matrix.fromList (config.inputs |> List.map List.singleton)
                 |> log "------------- PREDICT"
     in
     List.foldl
@@ -243,8 +253,7 @@ calculateValues config (NeuralNetwork neuralNetwork) =
             log "-> calculateValues" config
 
         inputs =
-            Matrix.fromList ( List.length config.inputs, 1 )
-                (config.inputs |> List.map List.singleton)
+            Matrix.fromList (config.inputs |> List.map List.singleton)
     in
     NeuralNetwork
         { neuralNetwork
@@ -299,8 +308,7 @@ trainWithValues trainingData (NeuralNetwork neuralNetwork) =
         expected : Matrix
         expected =
             log "EXPECTED" <|
-                Matrix.fromList ( List.length trainingData.expected, 1 )
-                    (trainingData.expected |> List.map List.singleton)
+                Matrix.fromList (trainingData.expected |> List.map List.singleton)
 
         errors : Matrix
         errors =

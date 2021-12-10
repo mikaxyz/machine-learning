@@ -26,8 +26,8 @@ dimensions (Matrix m) =
     { rows = m.rows, cols = m.cols }
 
 
-fromList : ( Int, Int ) -> List (List Float) -> Matrix
-fromList ( rows, columns ) data =
+fromList1 : ( Int, Int ) -> List (List Float) -> Matrix
+fromList1 ( rows, columns ) data =
     let
         data_ =
             data
@@ -35,6 +35,29 @@ fromList ( rows, columns ) data =
                 |> Array.map Array.fromList
     in
     create ( rows, columns )
+        |> indexedMap
+            (\rowIndex colIndex existing ->
+                Array.get rowIndex data_
+                    |> Maybe.andThen (Array.get colIndex)
+                    |> Maybe.withDefault existing
+            )
+
+
+fromList : List (List Float) -> Matrix
+fromList data =
+    let
+        data_ =
+            data
+                |> Array.fromList
+                |> Array.map Array.fromList
+
+        rows =
+            List.length data
+
+        cols =
+            data |> List.foldl (\x acc -> max acc (List.length x)) 0
+    in
+    create ( rows, cols )
         |> indexedMap
             (\rowIndex colIndex existing ->
                 Array.get rowIndex data_
