@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "name": "xyz-mika-machine-learning",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "elm-test",
+    "run": "http-server -c-1 -a localhost -p 8086"
+  },
+  "author": "Mika Jauhonen",
+  "license": "ISC",
+  "devDependencies": {
+    "elm": "^0.19.1-5",
+    "elm-format": "^0.8.5",
+    "elm-test": "^0.19.1-revision7",
+    "http-server": "^14.0.0"
+  }
+}
