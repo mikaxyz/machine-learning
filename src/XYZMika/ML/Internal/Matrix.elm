@@ -1,7 +1,20 @@
-module XYZMika.ML.Internal.Matrix exposing (..)
+module XYZMika.ML.Internal.Matrix exposing
+    ( Matrix
+    , add
+    , create
+    , dimensions
+    , fromList
+    , hadamard
+    , indexedMap
+    , map
+    , mul
+    , scale
+    , sub
+    , toList
+    , transpose
+    )
 
 import Array
-import List.Extra
 
 
 type Matrix
@@ -24,23 +37,6 @@ create ( rows, columns ) =
 dimensions : Matrix -> { rows : Int, cols : Int }
 dimensions (Matrix m) =
     { rows = m.rows, cols = m.cols }
-
-
-fromList1 : ( Int, Int ) -> List (List Float) -> Matrix
-fromList1 ( rows, columns ) data =
-    let
-        data_ =
-            data
-                |> Array.fromList
-                |> Array.map Array.fromList
-    in
-    create ( rows, columns )
-        |> indexedMap
-            (\rowIndex colIndex existing ->
-                Array.get rowIndex data_
-                    |> Maybe.andThen (Array.get colIndex)
-                    |> Maybe.withDefault existing
-            )
 
 
 fromList : List (List Float) -> Matrix
@@ -183,5 +179,33 @@ transpose (Matrix m) =
         { m
             | rows = m.cols
             , cols = m.rows
-            , data = List.Extra.transpose m.data
+            , data = listTranspose m.data
         }
+
+
+
+-- From List.Extra copy pasta
+
+
+{-| Transpose rows and columns of the list of lists.
+
+    transpose [ [ 1, 2, 3 ], [ 4, 5, 6 ] ]
+    --> [ [ 1, 4 ], [ 2, 5 ], [ 3, 6 ] ]
+
+    transpose [ [ 10, 11 ], [ 20, 40 ], [ 30, 31, 32, 400 ] ]
+    --> [ [ 10, 20, 30 ], [ 11, 40, 31 ] ]
+
+-}
+listTranspose : List (List a) -> List (List a)
+listTranspose listOfLists =
+    List.foldr (List.map2 (::)) (List.repeat (listRowsLength listOfLists) []) listOfLists
+
+
+listRowsLength : List (List a) -> Int
+listRowsLength listOfLists =
+    case listOfLists of
+        [] ->
+            0
+
+        x :: _ ->
+            List.length x
