@@ -36,16 +36,6 @@ import XYZMika.ML.ActivationFunction as ActivationFunction exposing (ActivationF
 import XYZMika.ML.Internal.Matrix as Matrix exposing (Matrix)
 
 
-logger : Bool -> String -> a -> a
-logger on msg x =
-    -- TODO: Remove...
-    if on then
-        Debug.log msg x
-
-    else
-        x
-
-
 type alias TrainingData =
     { inputs : List Float
     , expected : List Float
@@ -150,9 +140,6 @@ createLayer :
     -> ( Layer, Random.Seed )
 createLayer randomSeed inputCount outputCount =
     let
-        log =
-            logger True
-
         ( randomWeights, seed1 ) =
             Random.step
                 (Random.list (inputCount * outputCount) (Random.float -1 1))
@@ -179,7 +166,8 @@ createLayer randomSeed inputCount outputCount =
                                 rnd
 
                             Nothing ->
-                                log "RANDOM WEIGHT MISSING!" 0
+                                -- TODO: Handle this "error"?
+                                0
                     )
         , biases =
             Matrix.create ( outputCount, 1 )
@@ -190,7 +178,8 @@ createLayer randomSeed inputCount outputCount =
                                 rnd
 
                             Nothing ->
-                                log "RANDOM BIAS MISSING!" 0
+                                -- TODO: Handle this "error"?
+                                0
                     )
         }
     , seedOut
@@ -206,29 +195,12 @@ Train the NeuralNetwork with some TrainingData
 -}
 train : TrainingData -> NeuralNetwork -> NeuralNetwork
 train trainingData neuralNetwork =
-    let
-        log =
-            logger False
-
-        _ =
-            log "------------- TRAIN IT" trainingData
-    in
     calculateValues { inputs = trainingData.inputs } neuralNetwork
         |> trainWithValues trainingData
 
 
 calculateValues : { inputs : List Float } -> NeuralNetwork -> NeuralNetwork
 calculateValues config (NeuralNetwork neuralNetwork) =
-    let
-        log =
-            logger False
-
-        _ =
-            log "-> calculateValues" config
-
-        inputs =
-            Matrix.fromList (config.inputs |> List.map List.singleton)
-    in
     NeuralNetwork
         { neuralNetwork
             | layers =
@@ -236,18 +208,6 @@ calculateValues config (NeuralNetwork neuralNetwork) =
                     |> List.foldl
                         (\(Layer layer) ( layers, inputs_ ) ->
                             let
-                                _ =
-                                    log "- - - INPUTS" inputs_
-
-                                _ =
-                                    log "layer.weights" layer.weights
-
-                                _ =
-                                    log "layer.biases" layer.biases
-
-                                _ =
-                                    log "- - - OUTPUTS" outputs
-
                                 outputs : Matrix
                                 outputs =
                                     Matrix.mul layer.weights inputs_
@@ -259,7 +219,7 @@ calculateValues config (NeuralNetwork neuralNetwork) =
                             in
                             ( Layer { layer | inputs = inputs_, outputs = outputs } :: layers, outputs )
                         )
-                        ( [], inputs )
+                        ( [], Matrix.fromList (config.inputs |> List.map List.singleton) )
                     |> Tuple.first
                     |> List.reverse
         }
@@ -268,36 +228,17 @@ calculateValues config (NeuralNetwork neuralNetwork) =
 trainWithValues : TrainingData -> NeuralNetwork -> NeuralNetwork
 trainWithValues trainingData (NeuralNetwork neuralNetwork) =
     let
-        log =
-            logger False
-
-        _ =
-            log "_________________________________________" ""
-
-        _ =
-            log "-> trainWithValues" trainingData
-
         outputs : Matrix
         outputs =
-            log "OUTPUTS" <|
-                predictInternal { inputs = trainingData.inputs } (NeuralNetwork neuralNetwork)
+            predictInternal { inputs = trainingData.inputs } (NeuralNetwork neuralNetwork)
 
         expected : Matrix
         expected =
-            log "EXPECTED" <|
-                Matrix.fromList (trainingData.expected |> List.map List.singleton)
+            Matrix.fromList (trainingData.expected |> List.map List.singleton)
 
         errors : Matrix
         errors =
             expected |> Matrix.sub outputs
-
-        _ =
-            neuralNetwork.layers
-                |> List.indexedMap
-                    (\index (Layer layer) ->
-                        ( index, layer.inputs )
-                    )
-                |> log ">>>>>>>>>>>>>>>>"
     in
     NeuralNetwork
         { neuralNetwork
@@ -327,48 +268,13 @@ trainLayer :
     -> Matrix
     -> Layer
     -> ( Layer, Matrix )
-trainLayer { learningRate, activationFunction } errors_ (Layer layer) =
+trainLayer { learningRate, activationFunction } errors (Layer layer) =
     let
-        log =
-            logger False
-
-        _ =
-            log "------------------ TRAIN LAYER ---------------------" 0
-
-        _ =
-            log "INPUTS" (Matrix.toList layer.inputs)
-
-        _ =
-            log "OUTPUTS" (Matrix.toList layer.outputs)
-
-        _ =
-            log "errors_" (Matrix.toList errors_)
-
-        _ =
-            log "OLD WEIGHTS" (Matrix.toList layer.weights)
-
-        _ =
-            log "NEW WEIGHTS" (Matrix.toList weights)
-
-        _ =
-            log "GRADIENTS" (Matrix.toList gradients)
-
-        _ =
-            log "DELTAS" deltas
-
-        _ =
-            if Matrix.dimensions layer.weights /= Matrix.dimensions weights then
-                -- TODO: Return Result?
-                log "        !!!!!!! WRONG DIMENSIONS !!!!!!!       " 0
-
-            else
-                1
-
         gradients : Matrix
         gradients =
             layer.outputs
                 |> Matrix.map (ActivationFunction.dFunc activationFunction)
-                |> Matrix.hadamard errors_
+                |> Matrix.hadamard errors
                 |> Matrix.scale learningRate
 
         deltas : Matrix
@@ -388,13 +294,9 @@ trainLayer { learningRate, activationFunction } errors_ (Layer layer) =
         layerErrors =
             Matrix.mul
                 (Matrix.transpose layer.weights)
-                errors_
+                errors
     in
-    ( Layer
-        { layer
-            | weights = weights
-            , biases = biases
-        }
+    ( Layer { layer | weights = weights, biases = biases }
     , layerErrors
     )
 
@@ -406,43 +308,28 @@ predict : { inputs : List Float } -> NeuralNetwork -> List Float
 predict config neuralNetwork =
     predictInternal config neuralNetwork
         |> Matrix.toList
-        --|> List.head
-        --|> Maybe.withDefault []
         |> List.concat
 
 
 predictInternal : { inputs : List Float } -> NeuralNetwork -> Matrix
 predictInternal config (NeuralNetwork neuralNetwork) =
     let
-        log =
-            logger False
-
         inputs =
             Matrix.fromList (config.inputs |> List.map List.singleton)
-                |> log "------------- PREDICT"
     in
     List.foldl
-        (\(Layer layer) ( index, inputs_ ) ->
+        (\(Layer layer) inputs_ ->
             let
-                _ =
-                    log ("INPUTS LAYER" ++ String.fromInt index) inputs_
-
-                _ =
-                    log "layer.weights" layer.weights
-
                 output : Matrix
                 output =
                     Matrix.mul layer.weights inputs_
-                        |> log "INPUTS AFTER WEIGHT"
-                        |> Matrix.add (log "layer.biases" layer.biases)
+                        |> Matrix.add layer.biases
                         |> Matrix.map
                             (ActivationFunction.func
                                 neuralNetwork.activationFunction
                             )
-                        |> log ("OUTPUT LAYER" ++ String.fromInt index)
             in
-            ( index + 1, output )
+            output
         )
-        ( 1, inputs )
+        inputs
         neuralNetwork.layers
-        |> Tuple.second
