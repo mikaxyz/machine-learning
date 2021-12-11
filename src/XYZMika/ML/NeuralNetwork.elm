@@ -1,5 +1,5 @@
 module XYZMika.ML.NeuralNetwork exposing
-    ( configure, addLayer
+    ( configure, addLayer, withActivationFunction
     , create
     , train, TrainingData
     , predict
@@ -11,7 +11,7 @@ module XYZMika.ML.NeuralNetwork exposing
 
 # Configuration
 
-@docs configure, addLayer
+@docs configure, addLayer, withActivationFunction
 
 
 # Create
@@ -32,6 +32,7 @@ module XYZMika.ML.NeuralNetwork exposing
 
 import Array
 import Random
+import XYZMika.ML.ActivationFunction as ActivationFunction exposing (ActivationFunction(..))
 import XYZMika.ML.Matrix as Matrix exposing (Matrix)
 
 
@@ -85,26 +86,9 @@ addLayer { neurons } (Configuration config) =
     Configuration { config | layers = neurons :: config.layers }
 
 
-type ActivationFunction
-    = Sigmoid
-
-
-getActivationFunction : ActivationFunction -> (Float -> Float)
-getActivationFunction x =
-    -- TODO: This no gooood....
-    case x of
-        Sigmoid ->
-            sigmoid
-
-
-sigmoid : Float -> Float
-sigmoid x =
-    1 / (1 + Basics.e ^ -x)
-
-
-deSigmoid : Float -> Float
-deSigmoid y =
-    y * (1 - y)
+withActivationFunction : ActivationFunction -> Configuration -> Configuration
+withActivationFunction activationFunction (Configuration config) =
+    Configuration { config | activationFunction = activationFunction }
 
 
 {-| NeuralNetwork
@@ -115,8 +99,8 @@ type NeuralNetwork
     = NeuralNetwork
         { randomSeed : Random.Seed
         , layers : List Layer
-        , activationFunction : Float -> Float
         , learningRate : Float
+        , activationFunction : ActivationFunction
         }
 
 
@@ -128,7 +112,6 @@ type Layer
         , biases : Matrix
         , inputs : Matrix
         , outputs : Matrix
-        , activationFunction : Float -> Float
         }
 
 
@@ -139,10 +122,6 @@ NeuralNetwork.predict or be trained using NeuralNetwork.train...
 create : Configuration -> NeuralNetwork
 create (Configuration config) =
     let
-        -- TODO: Fix this. Should not be stored in "model"
-        activationFunction =
-            getActivationFunction config.activationFunction
-
         ( layers, randomSeed ) =
             config.layers
                 |> List.reverse
@@ -151,7 +130,6 @@ create (Configuration config) =
                         let
                             ( layer, seed_ ) =
                                 createLayer seed
-                                    activationFunction
                                     config.inputs
                                     outputs
                         in
@@ -162,18 +140,17 @@ create (Configuration config) =
     NeuralNetwork
         { randomSeed = randomSeed
         , layers = layers
-        , activationFunction = activationFunction
+        , activationFunction = config.activationFunction
         , learningRate = config.learningRate
         }
 
 
 createLayer :
     Random.Seed
-    -> (Float -> Float)
     -> Int
     -> Int
     -> ( Layer, Random.Seed )
-createLayer randomSeed activationFunction inputCount outputCount =
+createLayer randomSeed inputCount outputCount =
     let
         log =
             logger True
@@ -217,7 +194,6 @@ createLayer randomSeed activationFunction inputCount outputCount =
                             Nothing ->
                                 log "RANDOM BIAS MISSING!" 0
                     )
-        , activationFunction = activationFunction
         }
     , seedOut
     )
@@ -278,7 +254,10 @@ calculateValues config (NeuralNetwork neuralNetwork) =
                                 outputs =
                                     Matrix.mul layer.weights inputs_
                                         |> Matrix.add layer.biases
-                                        |> Matrix.map neuralNetwork.activationFunction
+                                        |> Matrix.map
+                                            (ActivationFunction.func
+                                                neuralNetwork.activationFunction
+                                            )
                             in
                             ( Layer { layer | inputs = inputs_, outputs = outputs } :: layers, outputs )
                         )
@@ -331,7 +310,10 @@ trainWithValues trainingData (NeuralNetwork neuralNetwork) =
                         (\layer ( layers, errors_ ) ->
                             let
                                 ( trainedLayer, layerErrors ) =
-                                    trainLayer neuralNetwork.learningRate errors_ layer
+                                    trainLayer
+                                        neuralNetwork
+                                        errors_
+                                        layer
                             in
                             ( trainedLayer :: layers
                             , layerErrors
@@ -342,15 +324,15 @@ trainWithValues trainingData (NeuralNetwork neuralNetwork) =
         }
 
 
-trainLayer : Float -> Matrix -> Layer -> ( Layer, Matrix )
-trainLayer learningRate errors_ (Layer layer) =
+trainLayer :
+    { a | learningRate : Float, activationFunction : ActivationFunction }
+    -> Matrix
+    -> Layer
+    -> ( Layer, Matrix )
+trainLayer { learningRate, activationFunction } errors_ (Layer layer) =
     let
         log =
             logger False
-
-        deActivationFunction =
-            -- TODO: Add to Config...
-            deSigmoid
 
         _ =
             log "------------------ TRAIN LAYER ---------------------" 0
@@ -387,7 +369,7 @@ trainLayer learningRate errors_ (Layer layer) =
         gradients : Matrix
         gradients =
             layer.outputs
-                |> Matrix.map deActivationFunction
+                |> Matrix.map (ActivationFunction.dFunc activationFunction)
                 |> Matrix.hadamard errors_
                 |> Matrix.scale learningRate
 
@@ -446,7 +428,10 @@ predict config (NeuralNetwork neuralNetwork) =
                     Matrix.mul layer.weights inputs_
                         |> log "INPUTS AFTER WEIGHT"
                         |> Matrix.add (log "layer.biases" layer.biases)
-                        |> Matrix.map neuralNetwork.activationFunction
+                        |> Matrix.map
+                            (ActivationFunction.func
+                                neuralNetwork.activationFunction
+                            )
                         |> log ("OUTPUT LAYER" ++ String.fromInt index)
             in
             ( index + 1, output )

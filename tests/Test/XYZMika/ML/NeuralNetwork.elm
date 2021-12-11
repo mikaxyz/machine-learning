@@ -3,6 +3,7 @@ module Test.XYZMika.ML.NeuralNetwork exposing (suite)
 import Expect exposing (Expectation)
 import Random
 import Test exposing (..)
+import XYZMika.ML.ActivationFunction as ActivationFunction
 import XYZMika.ML.Matrix as Matrix exposing (Matrix)
 import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork, TrainingData)
 
@@ -28,6 +29,32 @@ suite =
                             |> Matrix.toList
                 in
                 Expect.equal [ [ 0.31407280243810826 ] ] output
+        , test "uses activation functions" <|
+            \_ ->
+                let
+                    sigmoidOutput : Matrix
+                    sigmoidOutput =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 3
+                            , outputs = 1
+                            }
+                            |> NeuralNetwork.create
+                            |> NeuralNetwork.predict { inputs = [ 1, 2, 3 ] }
+
+                    tanhOutput : Matrix
+                    tanhOutput =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 3
+                            , outputs = 1
+                            }
+                            |> NeuralNetwork.withActivationFunction
+                                ActivationFunction.Tanh
+                            |> NeuralNetwork.create
+                            |> NeuralNetwork.predict { inputs = [ 1, 2, 3 ] }
+                in
+                Expect.notEqual sigmoidOutput tanhOutput
         , test "has correct number of outputs" <|
             \_ ->
                 let
