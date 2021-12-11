@@ -1,8 +1,8 @@
-module Test.XYZMika.ML.Matrix exposing (suite)
+module Test.XYZMika.ML.Internal.Matrix exposing (suite)
 
 import Expect exposing (Expectation)
 import Test exposing (..)
-import XYZMika.ML.Matrix as Matrix
+import XYZMika.ML.Internal.Matrix as Matrix
 
 
 suite : Test

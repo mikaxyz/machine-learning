@@ -33,7 +33,7 @@ module XYZMika.ML.NeuralNetwork exposing
 import Array
 import Random
 import XYZMika.ML.ActivationFunction as ActivationFunction exposing (ActivationFunction(..))
-import XYZMika.ML.Matrix as Matrix exposing (Matrix)
+import XYZMika.ML.Internal.Matrix as Matrix exposing (Matrix)
 
 
 logger : Bool -> String -> a -> a
@@ -282,7 +282,7 @@ trainWithValues trainingData (NeuralNetwork neuralNetwork) =
         outputs : Matrix
         outputs =
             log "OUTPUTS" <|
-                predict { inputs = trainingData.inputs } (NeuralNetwork neuralNetwork)
+                predictInternal { inputs = trainingData.inputs } (NeuralNetwork neuralNetwork)
 
         expected : Matrix
         expected =
@@ -404,8 +404,17 @@ trainLayer { learningRate, activationFunction } errors_ (Layer layer) =
 {-| Use
 Get the outputs from a NeuralNetwork.
 -}
-predict : { inputs : List Float } -> NeuralNetwork -> Matrix
-predict config (NeuralNetwork neuralNetwork) =
+predict : { inputs : List Float } -> NeuralNetwork -> List Float
+predict config neuralNetwork =
+    predictInternal config neuralNetwork
+        |> Matrix.toList
+        --|> List.head
+        --|> Maybe.withDefault []
+        |> List.concat
+
+
+predictInternal : { inputs : List Float } -> NeuralNetwork -> Matrix
+predictInternal config (NeuralNetwork neuralNetwork) =
     let
         log =
             logger False

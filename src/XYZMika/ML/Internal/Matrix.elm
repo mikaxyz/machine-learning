@@ -1,4 +1,4 @@
-module XYZMika.ML.Matrix exposing (..)
+module XYZMika.ML.Internal.Matrix exposing (..)
 
 import Array
 import List.Extra

@@ -4,7 +4,6 @@ import Expect exposing (Expectation)
 import Random
 import Test exposing (..)
 import XYZMika.ML.ActivationFunction as ActivationFunction
-import XYZMika.ML.Matrix as Matrix exposing (Matrix)
 import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork, TrainingData)
 
 
@@ -23,16 +22,16 @@ suite =
                             }
                             |> NeuralNetwork.create
 
+                    output : List Float
                     output =
                         neuralNetwork
                             |> NeuralNetwork.predict { inputs = [ 0, 1, 2 ] }
-                            |> Matrix.toList
                 in
-                Expect.equal [ [ 0.31407280243810826 ] ] output
+                Expect.equal [ 0.31407280243810826 ] output
         , test "uses activation functions" <|
             \_ ->
                 let
-                    sigmoidOutput : Matrix
+                    sigmoidOutput : List Float
                     sigmoidOutput =
                         NeuralNetwork.configure
                             { randomSeed = Random.initialSeed 42
@@ -42,7 +41,7 @@ suite =
                             |> NeuralNetwork.create
                             |> NeuralNetwork.predict { inputs = [ 1, 2, 3 ] }
 
-                    tanhOutput : Matrix
+                    tanhOutput : List Float
                     tanhOutput =
                         NeuralNetwork.configure
                             { randomSeed = Random.initialSeed 42
@@ -67,8 +66,6 @@ suite =
                             }
                             |> NeuralNetwork.create
                             |> NeuralNetwork.predict { inputs = List.repeat inputs 0.5 }
-                            |> Matrix.toList
-                            |> List.concat
                             |> List.length
 
                     result : List Int
@@ -97,8 +94,6 @@ suite =
                             |> NeuralNetwork.addLayer { neurons = 3 }
                             |> NeuralNetwork.create
                             |> NeuralNetwork.predict { inputs = List.repeat inputs 0.5 }
-                            |> Matrix.toList
-                            |> List.concat
                             |> List.length
 
                     result : List Int
@@ -156,15 +151,11 @@ suite =
                     out1 =
                         neuralNetwork
                             |> NeuralNetwork.predict { inputs = [ 1, 0.1 ] }
-                            |> Matrix.toList
-                            |> List.concat
 
                     out2 : List Float
                     out2 =
                         neuralNetwork
                             |> NeuralNetwork.predict { inputs = [ 1, 0.2 ] }
-                            |> Matrix.toList
-                            |> List.concat
                 in
                 Expect.all
                     [ \x -> Expect.equal 3 (List.length x)
@@ -215,18 +206,11 @@ suite =
                                 )
                                 neuralNetwork_
 
-                    neuralNetworkOutputSingleValue : Matrix -> Float
-                    neuralNetworkOutputSingleValue x =
-                        x
-                            |> Matrix.toList
-                            |> List.concat
-                            |> List.head
-                            |> Maybe.withDefault -1000
-
                     output inputs =
                         neuralNetwork
                             |> NeuralNetwork.predict { inputs = inputs }
-                            |> neuralNetworkOutputSingleValue
+                            |> List.head
+                            |> Maybe.withDefault -1000
                 in
                 Expect.all
                     [ \_ ->
