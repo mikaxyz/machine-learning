@@ -97,8 +97,7 @@ NeuralNetwork.predict or be trained using NeuralNetwork.train...
 -}
 type NeuralNetwork
     = NeuralNetwork
-        { randomSeed : Random.Seed
-        , layers : List Layer
+        { layers : List Layer
         , learningRate : Float
         , activationFunction : ActivationFunction
         }
@@ -122,7 +121,7 @@ NeuralNetwork.predict or be trained using NeuralNetwork.train...
 create : Configuration -> NeuralNetwork
 create (Configuration config) =
     let
-        ( layers, randomSeed ) =
+        ( layers, _ ) =
             config.layers
                 |> List.reverse
                 |> List.foldl
@@ -138,8 +137,7 @@ create (Configuration config) =
                     ( [], config.randomSeed )
     in
     NeuralNetwork
-        { randomSeed = randomSeed
-        , layers = layers
+        { layers = layers
         , activationFunction = config.activationFunction
         , learningRate = config.learningRate
         }
