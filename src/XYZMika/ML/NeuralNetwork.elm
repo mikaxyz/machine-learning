@@ -1,13 +1,34 @@
 module XYZMika.ML.NeuralNetwork exposing
-    ( NeuralNetwork
-    , TrainingData
-    , addLayer
+    ( configure, addLayer
     , create
-    , numberOfLayers
+    , train, TrainingData
     , predict
-    , sigmoid
-    , train
+    , Configuration, NeuralNetwork
     )
+
+{-| Neural Network
+
+
+# Configuration
+
+@docs configure, addLayer
+
+
+# Create
+
+@docs create
+
+
+# Train
+
+@docs train, TrainingData
+
+
+# Use
+
+@docs predict
+
+-}
 
 import Array
 import Random
@@ -16,6 +37,7 @@ import XYZMika.ML.Matrix as Matrix exposing (Matrix)
 
 logger : Bool -> String -> a -> a
 logger on msg x =
+    -- TODO: Remove...
     if on then
         Debug.log msg x
 
@@ -23,31 +45,79 @@ logger on msg x =
         x
 
 
-type NeuralNetwork
-    = NeuralNetwork Config
-
-
-type alias Config =
-    { randomSeed : Random.Seed
-    , layers : List Layer
-    , activationFunction : Float -> Float
-    , learningRate : Float
+type alias TrainingData =
+    { inputs : List Float
+    , expected : List Float
     }
 
 
-
--- TODO: Add layers in config instead
-{-
-   NeuralNetwork.config
-       { inputs = 2
-       , outputs = 1
-       , activationFunction = NeuralNetwork.sigmoid
-       , randomSeed = Random.initialSeed 42
-       }
-       |> NeuralNetwork.addLayer 2
-          (here all layers are created and can not change...)
-       |> NeuralNetwork.create
+{-| Configuration
+Configuration for a NeuralNetwork. Pass one of these to NeuralNetwork.create...
 -}
+type Configuration
+    = Configuration
+        { randomSeed : Random.Seed
+        , inputs : Int
+        , layers : List Int
+        , learningRate : Float
+        , activationFunction : ActivationFunction
+        }
+
+
+configure :
+    { inputs : Int
+    , outputs : Int
+    , randomSeed : Random.Seed
+    }
+    -> Configuration
+configure config =
+    Configuration
+        { randomSeed = config.randomSeed
+        , inputs = config.inputs
+        , layers = [ config.outputs ]
+        , learningRate = 0.25
+        , activationFunction = Sigmoid
+        }
+
+
+addLayer : { neurons : Int } -> Configuration -> Configuration
+addLayer { neurons } (Configuration config) =
+    Configuration { config | layers = neurons :: config.layers }
+
+
+type ActivationFunction
+    = Sigmoid
+
+
+getActivationFunction : ActivationFunction -> (Float -> Float)
+getActivationFunction x =
+    -- TODO: This no gooood....
+    case x of
+        Sigmoid ->
+            sigmoid
+
+
+sigmoid : Float -> Float
+sigmoid x =
+    1 / (1 + Basics.e ^ -x)
+
+
+deSigmoid : Float -> Float
+deSigmoid y =
+    y * (1 - y)
+
+
+{-| NeuralNetwork
+A NeuralNetwork which can turn inputs onto outputs using using
+NeuralNetwork.predict or be trained using NeuralNetwork.train...
+-}
+type NeuralNetwork
+    = NeuralNetwork
+        { randomSeed : Random.Seed
+        , layers : List Layer
+        , activationFunction : Float -> Float
+        , learningRate : Float
+        }
 
 
 type Layer
@@ -62,48 +132,39 @@ type Layer
         }
 
 
-type alias TrainingData =
-    { inputs : List Float
-    , expected : List Float
-    }
-
-
-sigmoid : Float -> Float
-sigmoid x =
-    1 / (1 + Basics.e ^ -x)
-
-
-deSigmoid : Float -> Float
-deSigmoid y =
-    y * (1 - y)
-
-
-create :
-    { inputs : Int
-    , outputs : Int
-    , activationFunction : Float -> Float
-    , randomSeed : Random.Seed
-    }
-    -> NeuralNetwork
-create config =
+{-| NeuralNetwork
+A NeuralNetwork which can turn inputs onto outputs using using
+NeuralNetwork.predict or be trained using NeuralNetwork.train...
+-}
+create : Configuration -> NeuralNetwork
+create (Configuration config) =
     let
-        ( layer, randomSeed ) =
-            createLayer config.randomSeed
-                config.activationFunction
-                config.inputs
-                config.outputs
+        -- TODO: Fix this. Should not be stored in "model"
+        activationFunction =
+            getActivationFunction config.activationFunction
+
+        ( layers, randomSeed ) =
+            config.layers
+                |> List.reverse
+                |> List.foldl
+                    (\outputs ( layers_, seed ) ->
+                        let
+                            ( layer, seed_ ) =
+                                createLayer seed
+                                    activationFunction
+                                    config.inputs
+                                    outputs
+                        in
+                        ( layer :: layers_, seed_ )
+                    )
+                    ( [], config.randomSeed )
     in
     NeuralNetwork
         { randomSeed = randomSeed
-        , layers = [ layer ]
-        , activationFunction = config.activationFunction
-        , learningRate = 0.25
+        , layers = layers
+        , activationFunction = activationFunction
+        , learningRate = config.learningRate
         }
-
-
-numberOfLayers : NeuralNetwork -> Int
-numberOfLayers (NeuralNetwork neuralNetwork) =
-    List.length neuralNetwork.layers
 
 
 createLayer :
@@ -162,74 +223,13 @@ createLayer randomSeed activationFunction inputCount outputCount =
     )
 
 
-addLayer : Int -> NeuralNetwork -> NeuralNetwork
-addLayer outputs (NeuralNetwork neuralNetwork) =
-    case List.head neuralNetwork.layers of
-        Just (Layer currentLayer) ->
-            let
-                ( newLayer, randomSeed1 ) =
-                    createLayer neuralNetwork.randomSeed
-                        neuralNetwork.activationFunction
-                        currentLayer.inputCount
-                        outputs
-
-                ( existingLayer, randomSeed ) =
-                    createLayer randomSeed1
-                        neuralNetwork.activationFunction
-                        outputs
-                        currentLayer.outputCount
-            in
-            NeuralNetwork
-                { neuralNetwork
-                    | randomSeed = randomSeed
-                    , layers =
-                        newLayer
-                            :: existingLayer
-                            :: List.drop 1 neuralNetwork.layers
-                }
-
-        Nothing ->
-            NeuralNetwork neuralNetwork
-
-
-predict : { inputs : List Float } -> NeuralNetwork -> Matrix
-predict config (NeuralNetwork neuralNetwork) =
-    let
-        log =
-            logger False
-
-        inputs =
-            Matrix.fromList (config.inputs |> List.map List.singleton)
-                |> log "------------- PREDICT"
-    in
-    List.foldl
-        (\(Layer layer) ( index, inputs_ ) ->
-            let
-                _ =
-                    log ("INPUTS LAYER" ++ String.fromInt index) inputs_
-
-                _ =
-                    log "layer.weights" layer.weights
-
-                output : Matrix
-                output =
-                    Matrix.mul layer.weights inputs_
-                        |> log "INPUTS AFTER WEIGHT"
-                        |> Matrix.add (log "layer.biases" layer.biases)
-                        |> Matrix.map neuralNetwork.activationFunction
-                        |> log ("OUTPUT LAYER" ++ String.fromInt index)
-            in
-            ( index + 1, output )
-        )
-        ( 1, inputs )
-        neuralNetwork.layers
-        |> Tuple.second
-
-
 
 ---- TRAINING
 
 
+{-| Training
+Train the NeuralNetwork with some TrainingData
+-}
 train : TrainingData -> NeuralNetwork -> NeuralNetwork
 train trainingData neuralNetwork =
     let
@@ -378,6 +378,7 @@ trainLayer learningRate errors_ (Layer layer) =
 
         _ =
             if Matrix.dimensions layer.weights /= Matrix.dimensions weights then
+                -- TODO: Return Result?
                 log "        !!!!!!! WRONG DIMENSIONS !!!!!!!       " 0
 
             else
@@ -416,3 +417,40 @@ trainLayer learningRate errors_ (Layer layer) =
         }
     , layerErrors
     )
+
+
+{-| Use
+Get the outputs from a NeuralNetwork.
+-}
+predict : { inputs : List Float } -> NeuralNetwork -> Matrix
+predict config (NeuralNetwork neuralNetwork) =
+    let
+        log =
+            logger False
+
+        inputs =
+            Matrix.fromList (config.inputs |> List.map List.singleton)
+                |> log "------------- PREDICT"
+    in
+    List.foldl
+        (\(Layer layer) ( index, inputs_ ) ->
+            let
+                _ =
+                    log ("INPUTS LAYER" ++ String.fromInt index) inputs_
+
+                _ =
+                    log "layer.weights" layer.weights
+
+                output : Matrix
+                output =
+                    Matrix.mul layer.weights inputs_
+                        |> log "INPUTS AFTER WEIGHT"
+                        |> Matrix.add (log "layer.biases" layer.biases)
+                        |> Matrix.map neuralNetwork.activationFunction
+                        |> log ("OUTPUT LAYER" ++ String.fromInt index)
+            in
+            ( index + 1, output )
+        )
+        ( 1, inputs )
+        neuralNetwork.layers
+        |> Tuple.second

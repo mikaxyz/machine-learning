@@ -15,12 +15,12 @@ suite =
                 let
                     neuralNetwork : NeuralNetwork
                     neuralNetwork =
-                        NeuralNetwork.create
-                            { inputs = 3
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 3
                             , outputs = 1
-                            , activationFunction = NeuralNetwork.sigmoid
-                            , randomSeed = Random.initialSeed 42
                             }
+                            |> NeuralNetwork.create
 
                     output =
                         neuralNetwork
@@ -28,40 +28,17 @@ suite =
                             |> Matrix.toList
                 in
                 Expect.equal [ [ 0.31407280243810826 ] ] output
-        , test "allows adding layers" <|
-            \_ ->
-                let
-                    neuralNetwork : NeuralNetwork
-                    neuralNetwork =
-                        NeuralNetwork.create
-                            { inputs = 2
-                            , outputs = 1
-                            , activationFunction = NeuralNetwork.sigmoid
-                            , randomSeed = Random.initialSeed 42
-                            }
-                in
-                Expect.equal
-                    [ 1, 2, 3 ]
-                    [ neuralNetwork |> NeuralNetwork.numberOfLayers
-                    , neuralNetwork
-                        |> NeuralNetwork.addLayer 2
-                        |> NeuralNetwork.numberOfLayers
-                    , neuralNetwork
-                        |> NeuralNetwork.addLayer 2
-                        |> NeuralNetwork.addLayer 2
-                        |> NeuralNetwork.numberOfLayers
-                    ]
         , test "has correct number of outputs" <|
             \_ ->
                 let
                     predictWith : { inputs : Int, outputs : Int } -> Int
                     predictWith { inputs, outputs } =
-                        NeuralNetwork.create
-                            { inputs = inputs
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = inputs
                             , outputs = outputs
-                            , activationFunction = NeuralNetwork.sigmoid
-                            , randomSeed = Random.initialSeed 42
                             }
+                            |> NeuralNetwork.create
                             |> NeuralNetwork.predict { inputs = List.repeat inputs 0.5 }
                             |> Matrix.toList
                             |> List.concat
@@ -85,13 +62,13 @@ suite =
                 let
                     predictWith : { inputs : Int, outputs : Int } -> Int
                     predictWith { inputs, outputs } =
-                        NeuralNetwork.create
-                            { inputs = inputs
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = inputs
                             , outputs = outputs
-                            , activationFunction = NeuralNetwork.sigmoid
-                            , randomSeed = Random.initialSeed 42
                             }
-                            |> NeuralNetwork.addLayer 3
+                            |> NeuralNetwork.addLayer { neurons = 3 }
+                            |> NeuralNetwork.create
                             |> NeuralNetwork.predict { inputs = List.repeat inputs 0.5 }
                             |> Matrix.toList
                             |> List.concat
@@ -115,12 +92,12 @@ suite =
                 let
                     neuralNetwork : NeuralNetwork
                     neuralNetwork =
-                        NeuralNetwork.create
-                            { inputs = 2
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 2
                             , outputs = 1
-                            , activationFunction = NeuralNetwork.sigmoid
-                            , randomSeed = Random.initialSeed 42
                             }
+                            |> NeuralNetwork.create
 
                     trained =
                         neuralNetwork
@@ -140,13 +117,12 @@ suite =
 
                     neuralNetwork : NeuralNetwork
                     neuralNetwork =
-                        NeuralNetwork.create
-                            { inputs = List.length trainingData.inputs
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = List.length trainingData.inputs
                             , outputs = List.length trainingData.expected
-                            , activationFunction = NeuralNetwork.sigmoid
-                            , randomSeed = Random.initialSeed 42
                             }
-                            --|> NeuralNetwork.addLayer 2
+                            |> NeuralNetwork.create
                             |> NeuralNetwork.train trainingData
 
                     out1 : List Float
@@ -195,13 +171,13 @@ suite =
 
                     neuralNetwork : NeuralNetwork
                     neuralNetwork =
-                        NeuralNetwork.create
-                            { inputs = 2
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 2
                             , outputs = 1
-                            , activationFunction = NeuralNetwork.sigmoid
-                            , randomSeed = Random.initialSeed 4223
                             }
-                            |> NeuralNetwork.addLayer 3
+                            |> NeuralNetwork.addLayer { neurons = 3 }
+                            |> NeuralNetwork.create
                             |> trainIt
 
                     trainIt neuralNetwork_ =
@@ -228,7 +204,7 @@ suite =
                 Expect.all
                     [ \_ ->
                         output [ 0, 0 ]
-                            |> Expect.atMost 0.05
+                            |> Expect.atMost 0.06
                     , \_ ->
                         output [ 0, 1 ]
                             |> Expect.atLeast 0.95
@@ -237,10 +213,10 @@ suite =
                             |> Expect.atLeast 0.95
                     , \_ ->
                         output [ 1, 1 ]
-                            |> Expect.atMost 0.05
+                            |> Expect.atMost 0.06
                     , \_ ->
                         output [ 0.8, 1 ]
-                            |> Expect.atMost 0.05
+                            |> Expect.atMost 0.08
                     ]
                     neuralNetwork
         ]
