@@ -1,6 +1,7 @@
 module Test.XYZMika.ML.Internal.Matrix exposing (suite)
 
 import Expect exposing (Expectation)
+import Json.Decode as JD
 import Test exposing (..)
 import XYZMika.ML.Internal.Matrix as Matrix
 
@@ -136,4 +137,23 @@ suite =
         --                ]
         --        in
         --        Expect.equal expected result
+        , test "encodes/decodes" <|
+            \_ ->
+                let
+                    matrix =
+                        [ [ 1, 2, 3, 4 ]
+                        , [ 4, 12, 12, 4 ]
+                        , [ 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 ]
+                        ]
+                            |> Matrix.fromList
+
+                    encoded =
+                        Matrix.encode matrix
+                in
+                case JD.decodeValue Matrix.decoder encoded of
+                    Ok decoded ->
+                        Expect.equal matrix decoded
+
+                    Err error ->
+                        Expect.fail (JD.errorToString error)
         ]

@@ -1,6 +1,7 @@
 module Test.XYZMika.ML.NeuralNetwork exposing (suite)
 
 import Expect exposing (Expectation)
+import Json.Decode as JD
 import Random
 import Test exposing (..)
 import XYZMika.ML.ActivationFunction as ActivationFunction
@@ -257,4 +258,28 @@ suite =
                             |> Expect.atMost 0.08
                     ]
                     neuralNetwork
+        , test "encodes/decodes" <|
+            \_ ->
+                let
+                    neuralNetwork : NeuralNetwork
+                    neuralNetwork =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 7
+                            , outputs = 4
+                            }
+                            |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
+                            |> NeuralNetwork.addLayer { neurons = 5 }
+                            |> NeuralNetwork.create
+                            |> NeuralNetwork.train (TrainingData [ 1, 0, 1, 1, 0, 0, 1 ] [ 0, 0, 1, 1 ])
+
+                    encoded =
+                        NeuralNetwork.encode neuralNetwork
+                in
+                case JD.decodeValue NeuralNetwork.decoder encoded of
+                    Ok decoded ->
+                        Expect.equal neuralNetwork decoded
+
+                    Err error ->
+                        Expect.fail (JD.errorToString error)
         ]

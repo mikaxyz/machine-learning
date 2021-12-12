@@ -2,7 +2,9 @@ module XYZMika.ML.Internal.Matrix exposing
     ( Matrix
     , add
     , create
+    , decoder
     , dimensions
+    , encode
     , fromList
     , hadamard
     , indexedMap
@@ -15,6 +17,8 @@ module XYZMika.ML.Internal.Matrix exposing
     )
 
 import Array
+import Json.Decode as JD
+import Json.Encode as JE
 
 
 type Matrix
@@ -209,3 +213,22 @@ listRowsLength listOfLists =
 
         x :: _ ->
             List.length x
+
+
+encode : Matrix -> JE.Value
+encode matrix =
+    let
+        { rows, cols } =
+            dimensions matrix
+    in
+    JE.object
+        [ ( "rows", JE.int rows )
+        , ( "cols", JE.int cols )
+        , ( "data", toList matrix |> JE.list (JE.list JE.float) )
+        ]
+
+
+decoder : JD.Decoder Matrix
+decoder =
+    JD.map fromList
+        (JD.field "data" (JD.list (JD.list JD.float)))

@@ -3,6 +3,7 @@ module XYZMika.ML.NeuralNetwork exposing
     , NeuralNetwork, create
     , train, TrainingData
     , predict
+    , decoder, encode
     )
 
 {-| Neural Network
@@ -27,9 +28,16 @@ module XYZMika.ML.NeuralNetwork exposing
 
 @docs predict
 
+
+# Serialization
+
+@docs decoder, encode
+
 -}
 
 import Array
+import Json.Decode as JD
+import Json.Encode as JE
 import Random
 import XYZMika.ML.ActivationFunction as ActivationFunction exposing (ActivationFunction(..))
 import XYZMika.ML.Internal.Matrix as Matrix exposing (Matrix)
@@ -336,3 +344,95 @@ predictInternal config (NeuralNetwork neuralNetwork) =
         )
         inputs
         neuralNetwork.layers
+
+
+
+-- Encode
+
+
+encode : NeuralNetwork -> JE.Value
+encode (NeuralNetwork neuralNetwork) =
+    JE.object
+        [ ( "layers", JE.list encodeLayer neuralNetwork.layers )
+        , ( "learningRate", JE.float neuralNetwork.learningRate )
+        , ( "activationFunction", encodeActivationFunction neuralNetwork.activationFunction )
+        ]
+
+
+encodeLayer : Layer -> JE.Value
+encodeLayer (Layer layer) =
+    JE.object
+        [ ( "inputCount", JE.int layer.inputCount )
+        , ( "outputCount", JE.int layer.outputCount )
+        , ( "inputs", Matrix.encode layer.inputs )
+        , ( "outputs", Matrix.encode layer.outputs )
+        , ( "weights", Matrix.encode layer.weights )
+        , ( "biases", Matrix.encode layer.biases )
+        ]
+
+
+encodeActivationFunction : ActivationFunction -> JE.Value
+encodeActivationFunction activationFunction =
+    case activationFunction of
+        Sigmoid ->
+            JE.string "Sigmoid"
+
+        Tanh ->
+            JE.string "Tanh"
+
+
+
+-- Decoder
+
+
+decoder : JD.Decoder NeuralNetwork
+decoder =
+    JD.map3
+        (\layers learningRate activationFunction ->
+            NeuralNetwork
+                { layers = layers
+                , learningRate = learningRate
+                , activationFunction = activationFunction
+                }
+        )
+        (JD.field "layers" (JD.list layerDecoder))
+        (JD.field "learningRate" JD.float)
+        (JD.field "activationFunction" activationFunctionDecoder)
+
+
+layerDecoder : JD.Decoder Layer
+layerDecoder =
+    JD.map6
+        (\inputCount outputCount inputs outputs weights biases ->
+            Layer
+                { inputCount = inputCount
+                , outputCount = outputCount
+                , inputs = inputs
+                , outputs = outputs
+                , weights = weights
+                , biases = biases
+                }
+        )
+        (JD.field "inputCount" JD.int)
+        (JD.field "outputCount" JD.int)
+        (JD.field "inputs" Matrix.decoder)
+        (JD.field "outputs" Matrix.decoder)
+        (JD.field "weights" Matrix.decoder)
+        (JD.field "biases" Matrix.decoder)
+
+
+activationFunctionDecoder : JD.Decoder ActivationFunction
+activationFunctionDecoder =
+    JD.string
+        |> JD.andThen
+            (\x ->
+                case x of
+                    "Sigmoid" ->
+                        JD.succeed Sigmoid
+
+                    "Tanh" ->
+                        JD.succeed Tanh
+
+                    _ ->
+                        JD.fail ("Unknown ActivationFunction" ++ x)
+            )
