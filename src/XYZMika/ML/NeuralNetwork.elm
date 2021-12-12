@@ -1,9 +1,8 @@
 module XYZMika.ML.NeuralNetwork exposing
-    ( configure, addLayer, withActivationFunction
-    , create
+    ( Configuration, configure, addLayer, withActivationFunction, withLearningRate
+    , NeuralNetwork, create
     , train, TrainingData
     , predict
-    , Configuration, NeuralNetwork
     )
 
 {-| Neural Network
@@ -11,12 +10,12 @@ module XYZMika.ML.NeuralNetwork exposing
 
 # Configuration
 
-@docs configure, addLayer, withActivationFunction
+@docs Configuration, configure, addLayer, withActivationFunction, withLearningRate
 
 
 # Create
 
-@docs create
+@docs NeuralNetwork, create
 
 
 # Train
@@ -74,6 +73,11 @@ configure config =
 addLayer : { neurons : Int } -> Configuration -> Configuration
 addLayer { neurons } (Configuration config) =
     Configuration { config | layers = neurons :: config.layers }
+
+
+withLearningRate : Float -> Configuration -> Configuration
+withLearningRate learningRate (Configuration config) =
+    Configuration { config | learningRate = learningRate }
 
 
 withActivationFunction : ActivationFunction -> Configuration -> Configuration

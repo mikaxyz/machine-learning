@@ -54,6 +54,33 @@ suite =
                             |> NeuralNetwork.predict { inputs = [ 1, 2, 3 ] }
                 in
                 Expect.notEqual sigmoidOutput tanhOutput
+        , test "uses learning rate" <|
+            \_ ->
+                let
+                    neuralNetworkConfig =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 3
+                            , outputs = 1
+                            }
+
+                    output1 : List Float
+                    output1 =
+                        neuralNetworkConfig
+                            |> NeuralNetwork.withLearningRate 0.1
+                            |> NeuralNetwork.create
+                            |> NeuralNetwork.train (TrainingData [ 1, 0, 1 ] [ 1 ])
+                            |> NeuralNetwork.predict { inputs = [ 1, 0, 0 ] }
+
+                    output2 : List Float
+                    output2 =
+                        neuralNetworkConfig
+                            |> NeuralNetwork.withLearningRate 0.100001
+                            |> NeuralNetwork.create
+                            |> NeuralNetwork.train (TrainingData [ 1, 0, 1 ] [ 1 ])
+                            |> NeuralNetwork.predict { inputs = [ 1, 0, 0 ] }
+                in
+                Expect.notEqual output1 output2
         , test "has correct number of outputs" <|
             \_ ->
                 let
