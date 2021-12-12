@@ -111,23 +111,22 @@ NeuralNetwork.predict or be trained using NeuralNetwork.train...
 create : Configuration -> NeuralNetwork
 create (Configuration config) =
     let
-        ( layers, _ ) =
+        ( layers, _, _ ) =
             config.layers
-                |> List.reverse
                 |> List.foldl
-                    (\outputs ( layers_, seed ) ->
+                    (\outputs ( layers_, inputs, seed ) ->
                         let
-                            ( layer, seed_ ) =
+                            ( Layer layer, seed_ ) =
                                 createLayer seed
-                                    config.inputs
+                                    inputs
                                     outputs
                         in
-                        ( layer :: layers_, seed_ )
+                        ( Layer layer :: layers_, outputs, seed_ )
                     )
-                    ( [], config.randomSeed )
+                    ( [], config.inputs, config.randomSeed )
     in
     NeuralNetwork
-        { layers = layers
+        { layers = layers |> List.reverse
         , activationFunction = config.activationFunction
         , learningRate = config.learningRate
         }

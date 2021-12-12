@@ -194,7 +194,7 @@ suite =
                             , inputs = 2
                             , outputs = 1
                             }
-                            |> NeuralNetwork.addLayer { neurons = 3 }
+                            |> NeuralNetwork.addLayer { neurons = 2 }
                             |> NeuralNetwork.create
                             |> trainIt
 
