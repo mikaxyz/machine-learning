@@ -28,5 +28,6 @@ services:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: password
   # Uncomment this if you want to persist the data.
-  # volumes:
-  #   - "./pgdata:/var/lib/postgresql/data"
+    volumes:
+      - ./data/postgresql:/var/lib/postgresql/data
+      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
