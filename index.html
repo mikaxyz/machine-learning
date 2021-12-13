@@ -7,12 +7,12 @@
   <link rel="icon" type="image/png" href="/img/profile-96x96.png">
 </head>
 <body>
-<script src="dist/main.js"></script>
+<script src="/dist/main.js"></script>
 <script>
   var app = Elm.Main.init();
 
   if (window.Worker) {
-    const worker = new Worker("worker.js");
+    const worker = new Worker("/worker.js");
 
     app.ports && app.ports.workerTaskStart && app.ports.workerTaskStart.subscribe(function(task) {
       console.log("workerTaskStart", task);
