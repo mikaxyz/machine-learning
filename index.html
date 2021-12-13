@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Population</title>
+  <link rel="stylesheet" href="/dist/main.css">
+  <link rel="icon" type="image/png" href="/img/profile-96x96.png">
+</head>
+<body>
+<script src="dist/main.js"></script>
+<script>
+  var app = Elm.Main.init();
+
+  if (window.Worker) {
+    const worker = new Worker("worker.js");
+
+    app.ports && app.ports.workerTaskStart && app.ports.workerTaskStart.subscribe(function(task) {
+      console.log("workerTaskStart", task);
+      worker.postMessage(task);
+    });
+
+    worker.onmessage = function(e) {
+      console.log("workerTaskOnCompleted", e.data);
+      app.ports && app.ports.workerTaskOnCompleted && app.ports.workerTaskOnCompleted.send(e.data);
+    }
+  } else {
+    console.log("Your browser doesn't support web workers.");
+  }
+</script>
+</body>
+</html>
