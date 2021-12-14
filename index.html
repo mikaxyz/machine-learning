@@ -20,8 +20,12 @@
     });
 
     worker.onmessage = function(e) {
-      console.log("workerTaskOnCompleted", e.data);
-      app.ports && app.ports.workerTaskOnCompleted && app.ports.workerTaskOnCompleted.send(e.data);
+      console.log("onmessage", e.data);
+      if (e.data.id && e.data.complete) {
+        app.ports && app.ports.workerOnProgress && app.ports.workerOnProgress.send(e.data);
+      } else {
+        app.ports && app.ports.workerOnCompleted && app.ports.workerOnCompleted.send(e.data);
+      }
     }
   } else {
     console.log("Your browser doesn't support web workers.");

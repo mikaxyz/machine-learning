@@ -14,6 +14,14 @@ import XYZMika.ML.NeuralNetwork as NeuralNetwork
 type Msg
     = HandleTask Worker.Task.Task
     | TrainNeuralNetwork Int NeuralNetwork
+    | TrainWithTrainingDataSet Int NeuralNetwork (List TrainingData)
+
+
+
+--{ neuralNetwork : NeuralNetwork
+--, trainingDataSet : List TrainingData
+--, trainingDataSetInitialSize : Int
+--}
 
 
 type Model
@@ -47,8 +55,15 @@ update msg model =
                             Cmd.none
 
                         Worker.Task.TrainNeuralNetwork steps neuralNetwork ->
-                            Task.perform (\_ -> TrainNeuralNetwork steps neuralNetwork)
-                                (Process.sleep 1000)
+                            --Task.perform (\_ -> TrainNeuralNetwork steps neuralNetwork) (Process.sleep 1000)
+                            Task.perform
+                                (\_ ->
+                                    TrainWithTrainingDataSet
+                                        steps
+                                        neuralNetwork
+                                        (randomTrainingDataSet steps)
+                                )
+                                (Process.sleep 300)
             in
             ( model
             , cmd
@@ -70,6 +85,38 @@ update msg model =
             ( model
             , Worker.Task.complete (Worker.Task.TrainedNeuralNetwork trained)
             )
+
+        TrainWithTrainingDataSet trainingDataSetInitialSize neuralNetwork trainingDataSet ->
+            case trainingDataSet of
+                trainingData :: rest ->
+                    let
+                        nn : NeuralNetwork
+                        nn =
+                            NeuralNetwork.train trainingData neuralNetwork
+
+                        complete : Float
+                        complete =
+                            1 - (toFloat (List.length rest) / toFloat trainingDataSetInitialSize)
+
+                        delay =
+                            case rest of
+                                [] ->
+                                    500
+
+                                _ ->
+                                    50
+                    in
+                    ( model
+                    , Cmd.batch
+                        [ Task.perform (\_ -> TrainWithTrainingDataSet trainingDataSetInitialSize nn rest) (Process.sleep delay)
+                        , Worker.Task.progress (Worker.Task.Progress 1 complete)
+                        ]
+                    )
+
+                [] ->
+                    ( model
+                    , Worker.Task.complete (Worker.Task.TrainedNeuralNetwork neuralNetwork)
+                    )
 
 
 randomTrainingDataSet : Int -> List TrainingData

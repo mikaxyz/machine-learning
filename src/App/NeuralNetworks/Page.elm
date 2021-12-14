@@ -2,6 +2,7 @@ module App.NeuralNetworks.Page exposing
     ( Model
     , Msg
     , init
+    , subscriptions
     , update
     , updateRoute
     , view
@@ -44,11 +45,9 @@ routeToPage route =
 
         Route.Train id ->
             App.NeuralNetworks.Train.Page.init id
-                |> Tuple.mapFirst Model.Train
-
-
-
---( Model.Train id, Cmd.none )
+                |> Tuple.mapBoth
+                    Model.Train
+                    (Cmd.map TrainPageMsg)
 
 
 type alias Msg =
@@ -62,6 +61,17 @@ type alias Model =
 view : Model -> Html Msg
 view =
     App.NeuralNetworks.View.view
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.page of
+        Model.Create _ ->
+            Sub.none
+
+        Model.Train page ->
+            App.NeuralNetworks.Train.Page.subscriptions page
+                |> Sub.map TrainPageMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

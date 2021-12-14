@@ -43,7 +43,15 @@ main =
                 Browser.application
                     { init = \_ url key -> spa.init url key |> init
                     , update = update
-                    , subscriptions = \model -> Worker.Task.onCompleted WorkerTaskCompleted
+                    , subscriptions =
+                        \model ->
+                            case model.page of
+                                NeuralNetworks page ->
+                                    App.NeuralNetworks.Page.subscriptions page
+                                        |> Sub.map NeuralNetworksPageMsg
+
+                                NotFound ->
+                                    Sub.none
                     , view = \model -> view model
                     , onUrlRequest = \request -> SpaMsg (spa.onUrlRequest request)
                     , onUrlChange = \url -> SpaMsg (spa.onUrlChange url)
@@ -53,25 +61,10 @@ main =
 
 init : ( Spa Route, Cmd Msg ) -> ( Model, Cmd Msg )
 init ( spa, spaCmd ) =
-    let
-        neuralNetwork : NeuralNetwork
-        neuralNetwork =
-            NeuralNetwork.configure
-                { randomSeed = Random.initialSeed 42
-                , inputs = 2
-                , outputs = 1
-                }
-                |> NeuralNetwork.addLayer { neurons = 2 }
-                |> NeuralNetwork.create
-    in
     ( { spa = spa
       , page = NotFound
       }
-    , Cmd.batch
-        [ spaCmd
-        , Worker.Task.TrainNeuralNetwork 200000 neuralNetwork
-            |> Worker.Task.start
-        ]
+    , spaCmd
     )
 
 

@@ -7,6 +7,11 @@ app.ports && app.ports.workerTaskComplete && app.ports.workerTaskComplete.subscr
 	postMessage(task);
 });
 
+app.ports && app.ports.workerTaskProgress && app.ports.workerTaskProgress.subscribe(function(data) {
+	console.log("workerTaskProgress", data);
+	postMessage(data);
+});
+
 onmessage = function(e) {
 	console.log("workerTaskOnStart", e.data);
 	app.ports && app.ports.workerTaskOnStart && app.ports.workerTaskOnStart.send(e.data);

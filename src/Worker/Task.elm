@@ -1,9 +1,12 @@
 port module Worker.Task exposing
-    ( Result(..)
+    ( Progress
+    , Result(..)
     , Task(..)
     , complete
     , onCompleted
+    , onProgress
     , onStart
+    , progress
     , start
     )
 
@@ -22,6 +25,12 @@ port workerTaskComplete : JE.Value -> Cmd msg
 
 
 port workerOnCompleted : (JE.Value -> msg) -> Sub msg
+
+
+port workerTaskProgress : JE.Value -> Cmd msg
+
+
+port workerOnProgress : (JE.Value -> msg) -> Sub msg
 
 
 start : Task -> Cmd msg
@@ -47,6 +56,11 @@ complete result =
     workerTaskComplete (encodeResult result)
 
 
+progress : Progress -> Cmd msg
+progress data =
+    workerTaskProgress (encodeProgress data)
+
+
 onCompleted : (Result -> msg) -> Sub msg
 onCompleted msg =
     workerOnCompleted
@@ -60,6 +74,21 @@ onCompleted msg =
         )
 
 
+onProgress : (Result.Result String Progress -> msg) -> Sub msg
+onProgress msg =
+    workerOnProgress
+        (\value ->
+            value
+                |> JD.decodeValue progressDecoder
+                |> Result.mapError (always "Progress data was broken somehow...")
+                |> msg
+        )
+
+
+type alias Progress =
+    { id : Int, complete : Float }
+
+
 type Task
     = UnknownTask
     | TrainNeuralNetwork Int NeuralNetwork
@@ -68,6 +97,21 @@ type Task
 type Result
     = UnknownResult
     | TrainedNeuralNetwork NeuralNetwork
+
+
+encodeProgress : Progress -> JE.Value
+encodeProgress data =
+    JE.object
+        [ ( "id", JE.int data.id )
+        , ( "complete", JE.float data.complete )
+        ]
+
+
+progressDecoder : JD.Decoder Progress
+progressDecoder =
+    JD.map2 Progress
+        (JD.field "id" JD.int)
+        (JD.field "complete" JD.float)
 
 
 encodeTask : Task -> JE.Value
