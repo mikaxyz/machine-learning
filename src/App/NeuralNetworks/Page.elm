@@ -11,6 +11,7 @@ import Api.Models
 import App.NeuralNetworks.Create.Page
 import App.NeuralNetworks.Model as Model exposing (Model, Msg(..), Page)
 import App.NeuralNetworks.Route as Route exposing (Route)
+import App.NeuralNetworks.Train.Page
 import App.NeuralNetworks.View
 import Html exposing (Html)
 
@@ -41,8 +42,13 @@ routeToPage route =
             App.NeuralNetworks.Create.Page.init
                 |> Tuple.mapFirst Model.Create
 
-        Route.NeuralNetwork id ->
-            ( Model.NeuralNetwork id, Cmd.none )
+        Route.Train id ->
+            App.NeuralNetworks.Train.Page.init id
+                |> Tuple.mapFirst Model.Train
+
+
+
+--( Model.Train id, Cmd.none )
 
 
 type alias Msg =
@@ -92,6 +98,20 @@ update msg model =
                         page_
                         |> Tuple.mapFirst
                             (\page -> { model | page = Model.Create page })
+
+                _ ->
+                    ( model, Cmd.none )
+
+        TrainPageMsg msg_ ->
+            case model.page of
+                Model.Train page_ ->
+                    App.NeuralNetworks.Train.Page.update
+                        { tagger = TrainPageMsg
+                        }
+                        msg_
+                        page_
+                        |> Tuple.mapFirst
+                            (\page -> { model | page = Model.Train page })
 
                 _ ->
                     ( model, Cmd.none )
