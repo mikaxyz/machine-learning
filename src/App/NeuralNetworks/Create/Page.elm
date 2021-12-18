@@ -1,5 +1,6 @@
 module App.NeuralNetworks.Create.Page exposing (Model, Msg, init, update, view)
 
+import Api.Model as Api
 import Api.Models
 import Html exposing (Html, button, form, h1, section, text)
 import Html.Attributes exposing (type_)
@@ -16,11 +17,7 @@ import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork)
 type Msg
     = OnChange Form
     | OnSubmit
-    | OnSaved
-        { title : String
-        , neuralNetwork : NeuralNetwork
-        }
-        (Result Http.Error ())
+    | OnSaved (Result Http.Error Api.Model)
 
 
 type Form
@@ -72,7 +69,7 @@ init =
     )
 
 
-update : { tagger : Msg -> msg, onCreated : String -> NeuralNetwork -> msg } -> Msg -> Model -> ( Model, Cmd msg )
+update : { tagger : Msg -> msg, onCreated : Api.Model -> msg } -> Msg -> Model -> ( Model, Cmd msg )
 update { tagger, onCreated } msg model =
     case msg of
         OnChange form ->
@@ -116,18 +113,21 @@ update { tagger, onCreated } msg model =
                 { title = title
                 , neuralNetwork = neuralNetwork
                 }
-                (OnSaved
-                    { title = "NEW: " ++ title
-                    , neuralNetwork = neuralNetwork
-                    }
-                )
+                OnSaved
                 |> Cmd.map tagger
             )
 
-        OnSaved { title, neuralNetwork } result ->
-            ( model
-            , Task.perform (\_ -> onCreated title neuralNetwork) (Task.succeed ())
-            )
+        OnSaved result ->
+            case result of
+                Ok apiModel ->
+                    ( model
+                    , Task.perform onCreated (Task.succeed apiModel)
+                    )
+
+                Err error ->
+                    ( model
+                    , Cmd.none
+                    )
 
 
 view : Model -> Html Msg

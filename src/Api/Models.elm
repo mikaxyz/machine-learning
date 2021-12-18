@@ -33,7 +33,7 @@ get msg =
         }
 
 
-post : { title : String, neuralNetwork : NeuralNetwork } -> (Result Http.Error () -> msg) -> Cmd msg
+post : { title : String, neuralNetwork : NeuralNetwork } -> (Result Http.Error Model -> msg) -> Cmd msg
 post { title, neuralNetwork } msg =
     let
         body =
@@ -42,8 +42,15 @@ post { title, neuralNetwork } msg =
                 , ( "data", NeuralNetwork.encode neuralNetwork )
                 ]
     in
-    Http.post
-        { url = url
+    Http.request
+        { method = "POST"
+        , headers =
+            [ Http.header "Accept" "application/vnd.pgrst.object+json"
+            , Http.header "Prefer" "return=representation"
+            ]
+        , url = url
         , body = Http.jsonBody body
-        , expect = Http.expectWhatever msg
+        , expect = Http.expectJson msg Api.Model.decoder
+        , timeout = Nothing
+        , tracker = Nothing
         }

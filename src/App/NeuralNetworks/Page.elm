@@ -87,10 +87,10 @@ update msg model =
             , Cmd.none
             )
 
-        OnCreated title neuralNetwork ->
+        OnCreated apiModel ->
             ( { model
                 | models =
-                    { id = -1, title = title, data = neuralNetwork }
+                    { apiModel | title = "NEW: " ++ apiModel.title }
                         :: List.reverse model.models
                         |> List.reverse
               }
