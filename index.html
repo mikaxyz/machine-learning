@@ -11,25 +11,71 @@
 <script>
   var app = Elm.Main.init();
 
-  if (window.Worker) {
-    const worker = new Worker("/worker.js");
-
-    app.ports && app.ports.workerTaskStart && app.ports.workerTaskStart.subscribe(function(task) {
-      console.log("workerTaskStart", task);
-      worker.postMessage(task);
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      }, function(err) {
+        console.log('ServiceWorker registration failed: ', err);
+      });
     });
 
-    worker.onmessage = function(e) {
-      console.log("onmessage", e.data);
-      if (e.data.id && e.data.complete) {
-        app.ports && app.ports.workerOnProgress && app.ports.workerOnProgress.send(e.data);
-      } else {
-        app.ports && app.ports.workerOnCompleted && app.ports.workerOnCompleted.send(e.data);
-      }
-    }
-  } else {
-    console.log("Your browser doesn't support web workers.");
+    navigator.serviceWorker.addEventListener('message', event => {
+      // event is a MessageEvent object
+      console.log(`The service worker sent me a message: ${event.data}`);
+    });
+
+    navigator.serviceWorker.ready.then( registration => {
+      registration.active.postMessage("Hi service worker");
+    });
+
+    // function showNotification() {
+    //   Notification.requestPermission(function(result) {
+    //     if (result === 'granted') {
+    //       navigator.serviceWorker.ready.then(function(registration) {
+    //         registration.showNotification('Vibration Sample', {
+    //           body: 'Buzz! Buzz!',
+    //           icon: '/img/profile-96x96.png',
+    //           vibrate: [200, 100, 200, 100, 200, 100, 200],
+    //           tag: 'vibration-sample'
+    //         });
+    //       });
+    //     }
+    //   });
+    // }
+
+
+    // Notification.requestPermission(function(result) {
+    //   console.log("requestPermission", result);
+    //   if (result === 'granted') {
+    //     console.log("GRANTED...");
+    //   }
+    // })
+
+
   }
+
+  // showNotification();
+
+  // if (window.Worker) {
+  //   const worker = new Worker("/worker.js");
+  //
+  //   app.ports && app.ports.workerTaskStart && app.ports.workerTaskStart.subscribe(function(task) {
+  //     console.log("workerTaskStart", task);
+  //     worker.postMessage(task);
+  //   });
+  //
+  //   worker.onmessage = function(e) {
+  //     console.log("onmessage", e.data);
+  //     if (e.data.id && e.data.complete) {
+  //       app.ports && app.ports.workerOnProgress && app.ports.workerOnProgress.send(e.data);
+  //     } else {
+  //       app.ports && app.ports.workerOnCompleted && app.ports.workerOnCompleted.send(e.data);
+  //     }
+  //   }
+  // } else {
+  //   console.log("Your browser doesn't support web workers.");
+  // }
 </script>
 </body>
 </html>
