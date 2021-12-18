@@ -15,6 +15,7 @@ import App.NeuralNetworks.Route as Route exposing (Route)
 import App.NeuralNetworks.Train.Page
 import App.NeuralNetworks.View
 import Html exposing (Html)
+import XYZMika.Spa as Spa exposing (Spa)
 
 
 init : Route -> ( Model, Cmd Msg )
@@ -74,8 +75,8 @@ subscriptions model =
                 |> Sub.map TrainPageMsg
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Spa route -> Msg -> Model -> ( Model, Cmd Msg )
+update spa msg model =
     case msg of
         GotModels result ->
             ( case result of
@@ -94,7 +95,7 @@ update msg model =
                         :: List.reverse model.models
                         |> List.reverse
               }
-            , Cmd.none
+            , Spa.pushUrl spa (Route.Train apiModel.id |> Route.toPath)
             )
 
         CreatePageMsg msg_ ->

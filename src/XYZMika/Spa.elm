@@ -4,6 +4,7 @@ module XYZMika.Spa exposing
     , application
     , currentRoute
     , currentUrl
+    , pushUrl
     , update
     )
 
@@ -54,6 +55,11 @@ currentUrl (Spa { router }) =
 currentRoute : Spa route -> Maybe route
 currentRoute (Spa { router }) =
     Router.route router
+
+
+pushUrl : Spa route -> String -> Cmd msg
+pushUrl (Spa spa) url =
+    Router.pushUrl spa.router url
 
 
 init :

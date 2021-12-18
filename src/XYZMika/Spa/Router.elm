@@ -31,6 +31,11 @@ currentUrl (State { url }) =
     url
 
 
+pushUrl : Router route -> String -> Cmd msg
+pushUrl (State router) url =
+    Browser.Navigation.pushUrl router.key url
+
+
 push : (Url -> Maybe route) -> (route -> String) -> Router route -> Url -> ( Router route, Cmd msg )
 push fromUrl routeToPath (State router) url =
     case fromUrl url of

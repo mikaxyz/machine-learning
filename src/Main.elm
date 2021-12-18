@@ -104,7 +104,7 @@ update msg model =
         NeuralNetworksPageMsg msg_ ->
             case model.page of
                 NeuralNetworks page_ ->
-                    App.NeuralNetworks.Page.update msg_ page_
+                    App.NeuralNetworks.Page.update model.spa msg_ page_
                         |> Tuple.mapBoth
                             (\page -> { model | page = NeuralNetworks page })
                             (Cmd.map NeuralNetworksPageMsg)
