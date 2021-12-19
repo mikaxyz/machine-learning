@@ -14,6 +14,7 @@ import App.NeuralNetworks.Model as Model exposing (Model, Msg(..), Page)
 import App.NeuralNetworks.Route as Route exposing (Route)
 import App.NeuralNetworks.Train.Page
 import App.NeuralNetworks.View
+import App.NeuralNetworks.View.Page
 import Html exposing (Html)
 import XYZMika.Spa as Spa exposing (Spa)
 
@@ -50,6 +51,12 @@ routeToPage route =
                     Model.Train
                     (Cmd.map TrainPageMsg)
 
+        Route.View id ->
+            App.NeuralNetworks.View.Page.init id
+                |> Tuple.mapBoth
+                    Model.View
+                    (Cmd.map ViewPageMsg)
+
 
 type alias Msg =
     Model.Msg
@@ -73,6 +80,10 @@ subscriptions model =
         Model.Train page ->
             App.NeuralNetworks.Train.Page.subscriptions page
                 |> Sub.map TrainPageMsg
+
+        Model.View page ->
+            App.NeuralNetworks.View.Page.subscriptions page
+                |> Sub.map ViewPageMsg
 
 
 update : Spa route -> Msg -> Model -> ( Model, Cmd Msg )
@@ -123,6 +134,20 @@ update spa msg model =
                         page_
                         |> Tuple.mapFirst
                             (\page -> { model | page = Model.Train page })
+
+                _ ->
+                    ( model, Cmd.none )
+
+        ViewPageMsg msg_ ->
+            case model.page of
+                Model.View page_ ->
+                    App.NeuralNetworks.View.Page.update
+                        { tagger = ViewPageMsg
+                        }
+                        msg_
+                        page_
+                        |> Tuple.mapFirst
+                            (\page -> { model | page = Model.View page })
 
                 _ ->
                     ( model, Cmd.none )

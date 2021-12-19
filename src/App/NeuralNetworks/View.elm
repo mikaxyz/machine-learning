@@ -3,6 +3,7 @@ module App.NeuralNetworks.View exposing (view)
 import App.NeuralNetworks.Create.Page
 import App.NeuralNetworks.Model as Model exposing (Model, Msg(..))
 import App.NeuralNetworks.Train.Page
+import App.NeuralNetworks.View.Page
 import Html exposing (..)
 import Html.Attributes exposing (..)
 
@@ -19,6 +20,10 @@ view model =
                 Model.Train model_ ->
                     App.NeuralNetworks.Train.Page.view model_
                         |> Html.map TrainPageMsg
+
+                Model.View model_ ->
+                    App.NeuralNetworks.View.Page.view model_
+                        |> Html.map ViewPageMsg
             ]
         , aside
             [ class "app__sidebar" ]
@@ -31,7 +36,7 @@ view model =
                     |> List.map
                         (\x ->
                             li []
-                                [ a [ href <| "/train/" ++ String.fromInt x.id ] [ text x.title ]
+                                [ a [ href <| "/view/" ++ String.fromInt x.id ] [ text x.title ]
                                 ]
                         )
                     |> ul []

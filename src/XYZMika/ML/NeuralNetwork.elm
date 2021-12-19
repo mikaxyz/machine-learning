@@ -4,6 +4,7 @@ module XYZMika.ML.NeuralNetwork exposing
     , train, TrainingData
     , predict
     , decoder, encode
+    , layerOutputs, toLayers
     )
 
 {-| Neural Network
@@ -114,6 +115,49 @@ type Layer
         , inputs : Matrix
         , outputs : Matrix
         }
+
+
+toLayers : NeuralNetwork -> List Layer
+toLayers (NeuralNetwork x) =
+    x.layers
+
+
+layerOutputs :
+    Layer
+    ->
+        { inputs : List Float
+        , outputs : List Float
+        , weights : List (List Float)
+        , data : List ( Float, List Float )
+        }
+layerOutputs (Layer layer) =
+    let
+        inputs =
+            layer.inputs
+                |> Matrix.transpose
+                |> Matrix.toList
+                |> List.head
+                |> Maybe.withDefault []
+
+        outputs =
+            layer.outputs
+                |> Matrix.transpose
+                |> Matrix.toList
+                |> List.head
+                |> Maybe.withDefault []
+
+        weights =
+            layer.weights
+                |> Matrix.toList
+    in
+    { inputs = inputs
+    , outputs = outputs
+    , weights = weights
+    , data =
+        List.map2 Tuple.pair
+            outputs
+            weights
+    }
 
 
 {-| NeuralNetwork

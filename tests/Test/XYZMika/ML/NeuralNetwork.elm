@@ -2,6 +2,7 @@ module Test.XYZMika.ML.NeuralNetwork exposing (suite)
 
 import Expect exposing (Expectation)
 import Json.Decode as JD
+import Json.Encode as JE
 import Random
 import Test exposing (..)
 import XYZMika.ML.ActivationFunction as ActivationFunction
@@ -265,16 +266,26 @@ suite =
                     neuralNetwork =
                         NeuralNetwork.configure
                             { randomSeed = Random.initialSeed 42
-                            , inputs = 7
-                            , outputs = 4
+                            , inputs = 8
+                            , outputs = 2
                             }
                             |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
+                            |> NeuralNetwork.addLayer { neurons = 6 }
                             |> NeuralNetwork.addLayer { neurons = 5 }
                             |> NeuralNetwork.create
                             |> NeuralNetwork.train (TrainingData [ 1, 0, 1, 1, 0, 0, 1 ] [ 0, 0, 1, 1 ])
 
                     encoded =
                         NeuralNetwork.encode neuralNetwork
+
+                    --_ =
+                    --    neuralNetwork
+                    --        |> NeuralNetwork.toLayers
+                    --        |> List.map NeuralNetwork.layerOutputs
+                    --        |> Debug.log "layers"
+                    _ =
+                        JE.encode 0 encoded
+                            |> Debug.log "encoded"
                 in
                 case JD.decodeValue NeuralNetwork.decoder encoded of
                     Ok decoded ->
