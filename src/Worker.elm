@@ -109,7 +109,7 @@ update msg model =
                     ( model
                     , Cmd.batch
                         [ Task.perform (\_ -> TrainWithTrainingDataSet trainingDataSetInitialSize nn rest) (Process.sleep delay)
-                        , Worker.Task.progress (Worker.Task.Progress 1 complete)
+                        , Worker.Task.progress (Worker.Task.Progress 1 complete nn)
                         ]
                     )
 
@@ -129,14 +129,14 @@ randomTrainingDataSet size =
             (\i ->
                 case i of
                     0 ->
-                        TrainingData [ 0, 0 ] [ 0 ]
+                        TrainingData [ 0, 0, 0, 0 ] [ 0, 0 ]
 
                     1 ->
-                        TrainingData [ 1, 1 ] [ 0 ]
+                        TrainingData [ 0, 0, 1, 1 ] [ 0, 1 ]
 
                     2 ->
-                        TrainingData [ 0, 1 ] [ 1 ]
+                        TrainingData [ 1, 1, 0, 0 ] [ 1, 0 ]
 
                     _ ->
-                        TrainingData [ 1, 0 ] [ 1 ]
+                        TrainingData [ 1, 1, 1, 1 ] [ 0, 0 ]
             )

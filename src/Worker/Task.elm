@@ -86,7 +86,7 @@ onProgress msg =
 
 
 type alias Progress =
-    { id : Int, complete : Float }
+    { id : Int, complete : Float, neuralNetwork : NeuralNetwork }
 
 
 type Task
@@ -104,14 +104,16 @@ encodeProgress data =
     JE.object
         [ ( "id", JE.int data.id )
         , ( "complete", JE.float data.complete )
+        , ( "neuralNetwork", NeuralNetwork.encode data.neuralNetwork )
         ]
 
 
 progressDecoder : JD.Decoder Progress
 progressDecoder =
-    JD.map2 Progress
+    JD.map3 Progress
         (JD.field "id" JD.int)
         (JD.field "complete" JD.float)
+        (JD.field "neuralNetwork" NeuralNetwork.decoder)
 
 
 encodeTask : Task -> JE.Value

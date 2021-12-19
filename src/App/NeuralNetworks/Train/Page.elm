@@ -74,7 +74,7 @@ update { tagger } msg model =
         OnSubmit ->
             case model.neuralNetwork of
                 RemoteData.Loaded neuralNetwork ->
-                    ( { model | neuralNetwork = RemoteData.Progress 0 }
+                    ( { model | neuralNetwork = RemoteData.Progress 0 neuralNetwork }
                     , Worker.Task.TrainNeuralNetwork 100 neuralNetwork
                         |> Worker.Task.start
                     )
@@ -112,7 +112,7 @@ update { tagger } msg model =
                 _ =
                     Debug.log "WorkerTaskProgress" progress
             in
-            ( { model | neuralNetwork = RemoteData.Progress progress.complete }
+            ( { model | neuralNetwork = RemoteData.Progress progress.complete progress.neuralNetwork }
             , Cmd.none
             )
 
@@ -127,7 +127,7 @@ view model =
     section []
         [ h1 [] [ text "Train" ]
         , case model.neuralNetwork of
-            RemoteData.Progress x ->
+            RemoteData.Progress x _ ->
                 div []
                     [ progress [ HA.max "1.0", HA.value (String.fromFloat x) ] []
 

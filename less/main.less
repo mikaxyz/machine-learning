@@ -59,6 +59,24 @@ html {
 	}
 }
 
+.action-bar {
+	position: fixed;
+	bottom: 0;
+	right: 0;
+	display: flex;
+	padding: 0.5em 2em;
+
+	button {
+		background: aqua;
+		border: none;
+		padding: 0.5em 2.5em;
+		&:hover {
+			color: rgba(0,0,0,0.8);
+			box-shadow: inset 0 0 0 0.2em rgba(0,0,0,0.1);
+		}
+	}
+}
+
 //.app__header {
 //	position: fixed;
 //	width: 100%;
