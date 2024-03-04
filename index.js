@@ -80,7 +80,9 @@ function train({path, limit}) {
             fs.mkdirSync(".models");
         }
 
-        const path = `.models/${Date.now()}.json`;
+        const size = limit || "ALL";
+        const path = `.models/${Date.now()}_${size}.json`;
+
         try {
             fs.writeFileSync(path, json);
             return path;
