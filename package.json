@@ -5,7 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "elm make src/Main.elm --output dist/main.js",
+    "build": "elm make src/Train.elm --output dist/main.js",
     "test": "elm-test",
     "run": "npm run build && ./index.js .data/mnist_train.csv"
   },

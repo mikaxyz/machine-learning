@@ -1,4 +1,4 @@
-port module Main exposing (main)
+port module Train exposing (main)
 
 import ConcurrentTask exposing (ConcurrentTask)
 import Json.Decode as JD

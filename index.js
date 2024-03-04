@@ -23,7 +23,7 @@ if (!fs.existsSync(fileName)) {
 
 const {Elm} = require("./dist/main.js");
 
-const app = Elm.Main.init({flags: {fileName: fileName}});
+const app = Elm.Train.init({flags: {fileName: fileName}});
 
 ConcurrentTask.register({
     tasks: {
