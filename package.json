@@ -7,7 +7,7 @@
   "scripts": {
     "build": "elm make src/Train.elm --output dist/main.js",
     "test": "elm-test",
-    "run": "npm run build && ./index.js .data/mnist_train.csv"
+    "train": "npm run build && ./index.js train --path=.data/mnist_train.csv --limit=100"
   },
   "author": "Mika Jauhonen",
   "license": "ISC",
