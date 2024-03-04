@@ -40,7 +40,7 @@ function train({path, limit}) {
     }
 
     const {Elm} = require("./dist/main.js");
-    const app = Elm.Train.init({flags: {fileName: path}});
+    const app = Elm.Main.init({flags: {command: "train", fileName: path}});
 
     ConcurrentTask.register({
         tasks: {

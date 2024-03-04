@@ -1,28 +1,23 @@
-port module Train exposing (main)
+module Commands.Train exposing (Model, Msg, init, subscriptions, update)
 
 import ConcurrentTask exposing (ConcurrentTask)
 import Json.Decode as JD
-import Json.Encode as JE
+import Port
 import Random
 import Task
+import Tasks exposing (TaskError, TaskSuccess(..))
 import XYZMika.ML.ActivationFunction as ActivationFunction
 import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork)
 
 
-port send : JD.Value -> Cmd msg
+type alias Flags =
+    { fileName : String }
 
 
-port receive : (JD.Value -> msg) -> Sub msg
-
-
-type TaskError
-    = DecodeError JD.Error
-    | IOError
-
-
-type TaskSuccess
-    = TrainingData (List ImageData)
-    | ModelSaved String
+flagsDecoder : JD.Decoder Flags
+flagsDecoder =
+    JD.map Flags
+        (JD.field "fileName" JD.string)
 
 
 type Msg
@@ -39,29 +34,36 @@ type alias Model =
     }
 
 
-type alias Flags =
-    { fileName : String }
+type alias ImageData =
+    { label : Int
+    , values : List Int
+    }
 
 
-main : Program Flags Model Msg
-main =
-    Platform.worker
-        { init = init
-        , update = update
-        , subscriptions = subscriptions
-        }
+init : JD.Value -> ( Result JD.Error Model, Cmd Msg )
+init flagsValue =
+    case JD.decodeValue flagsDecoder flagsValue of
+        Ok flags ->
+            initWithFlags flags |> Tuple.mapFirst Ok
+
+        Err error ->
+            let
+                _ =
+                    Debug.log "Failed to decode flags for train command" (JD.errorToString error)
+            in
+            ( Err error, Cmd.none )
 
 
-init : Flags -> ( Model, Cmd Msg )
-init { fileName } =
+initWithFlags : Flags -> ( Model, Cmd Msg )
+initWithFlags flags =
     let
         ( tasks, cmd ) =
             ConcurrentTask.attempt
-                { send = send
+                { send = Port.send
                 , pool = ConcurrentTask.pool
                 , onComplete = OnComplete
                 }
-                (getFile fileName fileDecoder |> ConcurrentTask.map TrainingData)
+                (Tasks.getFile flags.fileName |> ConcurrentTask.map TrainingData)
     in
     ( { tasks = tasks
       , neuralNetwork =
@@ -82,8 +84,8 @@ init { fileName } =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     ConcurrentTask.onProgress
-        { send = send
-        , receive = receive
+        { send = Port.send
+        , receive = Port.receive
         , onProgress = OnProgress
         }
         model.tasks
@@ -133,11 +135,11 @@ update msg model =
                         --    Debug.log "TRAIN" imageData.label
                         ( tasks, cmd ) =
                             ConcurrentTask.attempt
-                                { send = send
+                                { send = Port.send
                                 , pool = ConcurrentTask.pool
                                 , onComplete = OnComplete
                                 }
-                                (saveModel model.neuralNetwork |> ConcurrentTask.map ModelSaved)
+                                (Tasks.saveModel model.neuralNetwork |> ConcurrentTask.map ModelSaved)
                     in
                     ( { model | tasks = tasks }
                     , cmd
@@ -192,105 +194,3 @@ labelToOutput10 label =
 
         _ ->
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-
-
-type alias ImageData =
-    { label : Int
-    , values : List Int
-    }
-
-
-imageDataFromString : String -> Result Int ImageData
-imageDataFromString x =
-    case String.split "," x |> List.map String.toInt of
-        (Just label) :: data ->
-            { label = label
-            , values = data |> List.filterMap identity
-            }
-                |> Ok
-
-        _ ->
-            Err 0
-
-
-imageDataDecoder : JD.Decoder ImageData
-imageDataDecoder =
-    JD.string
-        |> JD.andThen
-            (\x ->
-                case imageDataFromString x of
-                    Ok imageData ->
-                        JD.succeed imageData
-
-                    Err _ ->
-                        JD.fail "Could not decode image data"
-            )
-
-
-fileDecoder : JD.Decoder (List ImageData)
-fileDecoder =
-    JD.string
-        |> JD.andThen
-            (\fileContent ->
-                let
-                    results : { errors : List Int, images : List ImageData }
-                    results =
-                        String.lines fileContent
-                            |> List.map imageDataFromString
-                            |> List.foldl
-                                (\x a ->
-                                    case x of
-                                        Err err ->
-                                            { a | errors = err :: a.errors }
-
-                                        Ok image ->
-                                            { a | images = image :: a.images }
-                                )
-                                { errors = [], images = [] }
-                in
-                case ( results.errors, results.images ) of
-                    ( [], [] ) ->
-                        JD.fail "No data"
-
-                    ( errors, [] ) ->
-                        JD.fail ("Failed to decode " ++ (List.length errors |> String.fromInt) ++ " rows")
-
-                    ( _, images ) ->
-                        JD.succeed images
-            )
-
-
-decodeErrors : JD.Decoder TaskError
-decodeErrors =
-    JD.string
-        |> JD.andThen
-            (\reason ->
-                case reason of
-                    "IOError" ->
-                        JD.succeed IOError
-
-                    _ ->
-                        JD.fail ("Unrecognized ReadError " ++ reason)
-            )
-
-
-getFile : String -> JD.Decoder (List ImageData) -> ConcurrentTask TaskError (List ImageData)
-getFile fileName decoder =
-    ConcurrentTask.define
-        { function = "cli:readFile"
-        , expect = ConcurrentTask.expectString
-        , errors = ConcurrentTask.expectErrors decodeErrors
-        , args = JE.object [ ( "fileName", JE.string fileName ) ]
-        }
-        |> ConcurrentTask.map (JD.decodeString decoder >> Result.mapError DecodeError)
-        |> ConcurrentTask.andThen ConcurrentTask.fromResult
-
-
-saveModel : NeuralNetwork -> ConcurrentTask TaskError String
-saveModel neuralNetwork =
-    ConcurrentTask.define
-        { function = "cli:saveModel"
-        , expect = ConcurrentTask.expectString
-        , errors = ConcurrentTask.expectErrors decodeErrors
-        , args = NeuralNetwork.encode neuralNetwork
-        }
