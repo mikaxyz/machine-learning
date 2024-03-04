@@ -54,5 +54,18 @@ function readFile({fileName}) {
 
 function saveModel(model) {
     console.log("cli:saveModel", model)
-    return { error: "TODO" };
+    const json = JSON.stringify(model);
+
+    if (!fs.existsSync(".models")){
+        fs.mkdirSync(".models");
+    }
+
+    const path = `.models/${Date.now()}.json`;
+    try {
+        fs.writeFileSync(path, json);
+        return path;
+    } catch (e) {
+        console.error("cli:saveModel", e)
+        return { error: "IOError" };
+    }
 }

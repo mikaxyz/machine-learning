@@ -22,6 +22,7 @@ type TaskError
 
 type TaskSuccess
     = TrainingData (List ImageData)
+    | ModelSaved String
 
 
 type Msg
@@ -100,6 +101,15 @@ update msg model =
             , Task.succeed () |> Task.perform (\_ -> TrainWithData)
             )
 
+        OnComplete (ConcurrentTask.Success (ModelSaved path)) ->
+            let
+                _ =
+                    Debug.log "Saved model: " path
+            in
+            ( model
+            , Cmd.none
+            )
+
         OnComplete error ->
             let
                 _ =
@@ -118,12 +128,19 @@ update msg model =
                     )
 
                 [] ->
-                    --let
-                    --    _ =
-                    --        Debug.log "TRAIN" imageData.label
-                    --in
-                    ( model
-                    , Cmd.none
+                    let
+                        --_ =
+                        --    Debug.log "TRAIN" imageData.label
+                        ( tasks, cmd ) =
+                            ConcurrentTask.attempt
+                                { send = send
+                                , pool = ConcurrentTask.pool
+                                , onComplete = OnComplete
+                                }
+                                (saveModel model.neuralNetwork |> ConcurrentTask.map ModelSaved)
+                    in
+                    ( { model | tasks = tasks }
+                    , cmd
                     )
 
         Train imageData ->
@@ -267,3 +284,13 @@ getFile fileName decoder =
         }
         |> ConcurrentTask.map (JD.decodeString decoder >> Result.mapError DecodeError)
         |> ConcurrentTask.andThen ConcurrentTask.fromResult
+
+
+saveModel : NeuralNetwork -> ConcurrentTask TaskError String
+saveModel neuralNetwork =
+    ConcurrentTask.define
+        { function = "cli:saveModel"
+        , expect = ConcurrentTask.expectString
+        , errors = ConcurrentTask.expectErrors decodeErrors
+        , args = NeuralNetwork.encode neuralNetwork
+        }
