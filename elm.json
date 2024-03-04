@@ -7,6 +7,7 @@
     "elm-version": "0.19.1",
     "dependencies": {
         "direct": {
+            "andrewMacmurray/elm-concurrent-task": "1.1.0",
             "avh4/elm-color": "1.0.0",
             "elm/browser": "1.0.2",
             "elm/core": "1.0.5",
@@ -18,6 +19,8 @@
             "zwilias/elm-rosetree": "1.5.0"
         },
         "indirect": {
+            "danfishgold/base64-bytes": "1.1.0",
+            "elm/bytes": "1.0.8",
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "elm/virtual-dom": "1.0.2"
