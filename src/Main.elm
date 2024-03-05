@@ -1,11 +1,13 @@
 module Main exposing (main)
 
+import Commands.Test as Test
 import Commands.Train as Train
 import Json.Decode as JD
 
 
 type Msg
     = TrainMsg Train.Msg
+    | TestMsg Test.Msg
 
 
 type alias State =
@@ -19,10 +21,12 @@ type alias Model =
 
 type CommandState
     = TrainCommandState Train.Model
+    | TestCommandState Test.Model
 
 
 type Command
     = TrainCommand
+    | TestCommand
 
 
 type alias Flags =
@@ -40,6 +44,9 @@ flagsDecoder =
                         case x of
                             "train" ->
                                 JD.succeed TrainCommand
+
+                            "test" ->
+                                JD.succeed TestCommand
 
                             _ ->
                                 JD.fail <| "Unknown command: " ++ x
@@ -72,6 +79,16 @@ init flagsValue =
                             )
                         |> Tuple.mapSecond (Cmd.map TrainMsg)
 
+                TestCommand ->
+                    Test.init flagsValue
+                        |> Tuple.mapFirst
+                            (Result.map
+                                (\model ->
+                                    { command = TestCommandState model }
+                                )
+                            )
+                        |> Tuple.mapSecond (Cmd.map TestMsg)
+
         Err error ->
             let
                 _ =
@@ -87,6 +104,9 @@ subscriptions modelResult =
             case model.command of
                 TrainCommandState x ->
                     Train.subscriptions x |> Sub.map TrainMsg
+
+                TestCommandState x ->
+                    Test.subscriptions x |> Sub.map TestMsg
 
         Err _ ->
             Sub.none
@@ -112,3 +132,17 @@ update_ msg model =
                         |> Tuple.mapBoth
                             (\x -> { model | command = TrainCommandState x })
                             (Cmd.map TrainMsg)
+
+                _ ->
+                    ( model, Cmd.none )
+
+        TestMsg msg_ ->
+            case model.command of
+                TestCommandState commandStata ->
+                    Test.update msg_ commandStata
+                        |> Tuple.mapBoth
+                            (\x -> { model | command = TestCommandState x })
+                            (Cmd.map TestMsg)
+
+                _ ->
+                    ( model, Cmd.none )

@@ -73,7 +73,8 @@ initWithFlags flags =
                 , outputs = 10
                 }
                 |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
-                |> NeuralNetwork.addLayer { neurons = 10 }
+                |> NeuralNetwork.withLearningRate 0.03
+                |> NeuralNetwork.addLayer { neurons = 100 }
                 |> NeuralNetwork.create
       , trainingData = []
       }
