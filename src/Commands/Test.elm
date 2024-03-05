@@ -157,28 +157,34 @@ update msg model =
                         decimals =
                             3
 
-                        _ =
+                        totalNumberOfDocuments =
                             model.results
                                 |> Dict.map
                                     (\_ values ->
                                         let
+                                            numberOfDocuments : Int
+                                            numberOfDocuments =
+                                                List.length values
+
+                                            total : Float
                                             total =
-                                                values
-                                                    |> List.length
+                                                numberOfDocuments
                                                     |> toFloat
 
+                                            correct : Float
                                             correct =
                                                 values
                                                     |> List.filter identity
                                                     |> List.length
                                                     |> toFloat
                                         in
-                                        correct / total
+                                        ( numberOfDocuments, correct / total )
                                     )
                                 |> Dict.toList
                                 |> List.sortBy Tuple.first
                                 |> List.reverse
-                                |> List.map (\( label, value ) -> Debug.log (String.fromInt label ++ ":       " ++ (floatToPercentageDisplay decimals value ++ "         ")) 0)
+                                |> List.map (\( label, ( numberOfDocuments, value ) ) -> Debug.log (String.fromInt label ++ ":       " ++ (floatToPercentageDisplay decimals value ++ "         ")) numberOfDocuments)
+                                |> List.sum
 
                         _ =
                             Debug.log "__________________________" 0
@@ -187,7 +193,7 @@ update msg model =
                             (Dict.values percentagesByLabel |> List.sum)
                                 / (Dict.size percentagesByLabel |> toFloat)
                                 |> floatToPercentageDisplay decimals
-                                |> (\a -> Debug.log ("TOTAL:   " ++ a ++ "         ") 0)
+                                |> (\a -> Debug.log ("TOTAL:   " ++ a ++ "         ") totalNumberOfDocuments)
                     in
                     ( model
                     , Cmd.none
