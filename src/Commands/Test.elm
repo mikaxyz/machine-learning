@@ -1,4 +1,10 @@
-module Commands.Test exposing (Model, Msg, init, subscriptions, update)
+module Commands.Test exposing
+    ( Model
+    , Msg
+    , init
+    , subscriptions
+    , update
+    )
 
 import ConcurrentTask exposing (ConcurrentTask)
 import Dict exposing (Dict)
@@ -66,7 +72,7 @@ initWithFlags flags =
                 , pool = ConcurrentTask.pool
                 , onComplete = OnComplete
                 }
-                (Tasks.getFile flags.testDataPath |> ConcurrentTask.map TrainingData)
+                (Tasks.readMnistCsv flags.testDataPath |> ConcurrentTask.map TrainingData)
     in
     ( { tasks = tasks
       , neuralNetwork = flags.neuralNetwork

@@ -1,4 +1,9 @@
-module Tasks exposing (..)
+module Tasks exposing
+    ( TaskError
+    , TaskSuccess(..)
+    , readMnistCsv
+    , saveModel
+    )
 
 import ConcurrentTask exposing (ConcurrentTask)
 import Json.Decode as JD
@@ -22,6 +27,28 @@ type alias ImageData =
     }
 
 
+readMnistCsv : String -> ConcurrentTask TaskError (List ImageData)
+readMnistCsv fileName =
+    ConcurrentTask.define
+        { function = "cli:readMnistCsv"
+        , expect = ConcurrentTask.expectString
+        , errors = ConcurrentTask.expectErrors decodeErrors
+        , args = JE.object [ ( "fileName", JE.string fileName ) ]
+        }
+        |> ConcurrentTask.map (JD.decodeString fileDecoder >> Result.mapError DecodeError)
+        |> ConcurrentTask.andThen ConcurrentTask.fromResult
+
+
+saveModel : NeuralNetwork -> ConcurrentTask TaskError String
+saveModel neuralNetwork =
+    ConcurrentTask.define
+        { function = "cli:saveModel"
+        , expect = ConcurrentTask.expectString
+        , errors = ConcurrentTask.expectErrors decodeErrors
+        , args = NeuralNetwork.encode neuralNetwork
+        }
+
+
 imageDataFromString : String -> Result Int ImageData
 imageDataFromString x =
     case String.split "," x |> List.map String.toInt of
@@ -33,18 +60,6 @@ imageDataFromString x =
 
         _ ->
             Err 0
-
-
-getFile : String -> ConcurrentTask TaskError (List ImageData)
-getFile fileName =
-    ConcurrentTask.define
-        { function = "cli:readFile"
-        , expect = ConcurrentTask.expectString
-        , errors = ConcurrentTask.expectErrors decodeErrors
-        , args = JE.object [ ( "fileName", JE.string fileName ) ]
-        }
-        |> ConcurrentTask.map (JD.decodeString fileDecoder >> Result.mapError DecodeError)
-        |> ConcurrentTask.andThen ConcurrentTask.fromResult
 
 
 fileDecoder : JD.Decoder (List ImageData)
@@ -92,13 +107,3 @@ decodeErrors =
                     _ ->
                         JD.fail ("Unrecognized ReadError " ++ reason)
             )
-
-
-saveModel : NeuralNetwork -> ConcurrentTask TaskError String
-saveModel neuralNetwork =
-    ConcurrentTask.define
-        { function = "cli:saveModel"
-        , expect = ConcurrentTask.expectString
-        , errors = ConcurrentTask.expectErrors decodeErrors
-        , args = NeuralNetwork.encode neuralNetwork
-        }

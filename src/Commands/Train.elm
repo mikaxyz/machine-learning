@@ -1,4 +1,10 @@
-module Commands.Train exposing (Model, Msg, init, subscriptions, update)
+module Commands.Train exposing
+    ( Model
+    , Msg
+    , init
+    , subscriptions
+    , update
+    )
 
 import ConcurrentTask exposing (ConcurrentTask)
 import Json.Decode as JD
@@ -63,7 +69,7 @@ initWithFlags flags =
                 , pool = ConcurrentTask.pool
                 , onComplete = OnComplete
                 }
-                (Tasks.getFile flags.fileName |> ConcurrentTask.map TrainingData)
+                (Tasks.readMnistCsv flags.fileName |> ConcurrentTask.map TrainingData)
     in
     ( { tasks = tasks
       , neuralNetwork =

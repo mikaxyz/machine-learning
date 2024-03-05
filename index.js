@@ -9,6 +9,54 @@ process.on("beforeExit", () => {
     console.timeEnd("total");
 });
 
+const readMnistCsv = (limit) => ({fileName}) => {
+    console.log("cli:readMnistCsv", fileName)
+    try {
+        const content = fs.readFileSync(fileName, "utf8");
+        let documents = content.split("\n");
+
+        if (limit) {
+            documents = documents.slice(0, limit);
+        }
+
+        return JSON.stringify(documents.join("\n"));
+    } catch (e) {
+        console.error("cli:readMnistCsv", e)
+        return {error: "IOError"};
+    }
+}
+
+const readModel = (modelPath) => {
+    console.log("cli:readModel", fileName)
+    try {
+        return fs.readFileSync(modelPath, "utf8");
+    } catch (e) {
+        console.error("cli:readModel", e)
+        return {error: "IOError"};
+    }
+}
+
+
+const saveModel = (limit) => (model) => {
+    console.log("cli:saveModel", model)
+    const json = JSON.stringify(model);
+
+    if (!fs.existsSync(".models")) {
+        fs.mkdirSync(".models");
+    }
+
+    const size = limit || "ALL";
+    const path = `.models/${Date.now()}_${size}.json`;
+
+    try {
+        fs.writeFileSync(path, json);
+        return path;
+    } catch (e) {
+        console.error("cli:saveModel", e)
+        return {error: "IOError"};
+    }
+}
+
 yargs
     .command({
         command: 'train',
@@ -70,51 +118,14 @@ function train({path, limit}) {
 
     ConcurrentTask.register({
         tasks: {
-            "cli:readFile": readFile,
-            "cli:saveModel": saveModel
+            "cli:readMnistCsv": readMnistCsv(limit),
+            "cli:saveModel": saveModel(limit)
         },
         ports: {
             send: app.ports.send,
             receive: app.ports.receive,
         },
     });
-
-    function readFile({fileName}) {
-        console.log("cli:readFile", fileName)
-        try {
-            const content = fs.readFileSync(fileName, "utf8");
-            let documents = content.split("\n");
-
-            if (limit) {
-                documents = documents.slice(0, limit);
-            }
-
-            return JSON.stringify(documents.join("\n"));
-        } catch (e) {
-            console.error("cli:readFile", e)
-            return {error: "IOError"};
-        }
-    }
-
-    function saveModel(model) {
-        console.log("cli:saveModel", model)
-        const json = JSON.stringify(model);
-
-        if (!fs.existsSync(".models")) {
-            fs.mkdirSync(".models");
-        }
-
-        const size = limit || "ALL";
-        const path = `.models/${Date.now()}_${size}.json`;
-
-        try {
-            fs.writeFileSync(path, json);
-            return path;
-        } catch (e) {
-            console.error("cli:saveModel", e)
-            return {error: "IOError"};
-        }
-    }
 }
 
 function test({model, data, limit}) {
@@ -137,39 +148,11 @@ function test({model, data, limit}) {
     ConcurrentTask.register({
         tasks: {
             "cli:readModel": readModel,
-            "cli:readFile": readFile
+            "cli:readMnistCsv": readMnistCsv(limit)
         },
         ports: {
             send: app.ports.send,
             receive: app.ports.receive,
         },
     });
-
-    function readFile({fileName}) {
-        console.log("cli:readFile", fileName)
-        try {
-            const content = fs.readFileSync(fileName, "utf8");
-            let documents = content.split("\n");
-
-            if (limit) {
-                documents = documents.slice(0, limit);
-            }
-
-            return JSON.stringify(documents.join("\n"));
-        } catch (e) {
-            console.error("cli:readFile", e)
-            return {error: "IOError"};
-        }
-    }
-
-    function readModel(modelPath) {
-        console.log("cli:readModel", fileName)
-        try {
-            const data = fs.readFileSync(modelPath, "utf8");
-            return data;
-        } catch (e) {
-            console.error("cli:readModel", e)
-            return {error: "IOError"};
-        }
-    }
 }
