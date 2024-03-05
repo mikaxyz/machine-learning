@@ -38,7 +38,7 @@ const readModel = (modelPath) => {
 }
 
 
-const saveModel = (limit) => (model) => {
+const saveModel = ({dataPath, dataLimit, learningRate, activationFunction, seed, layers }) => (model) => {
     console.log("cli:saveModel", model)
     const json = JSON.stringify(model);
 
@@ -46,8 +46,12 @@ const saveModel = (limit) => (model) => {
         fs.mkdirSync(".models");
     }
 
-    const size = limit || "ALL";
-    const path = `.models/${Date.now()}_${size}.json`;
+    const dataFileName = dataPath.split("/").at(-1).replace(".", "_");
+
+    const size = dataLimit || "ALL";
+    const layerInfo = layers.join("-");
+    const fileInfo = `rate=${learningRate},fn=${activationFunction},seed=${seed},layers=${layerInfo},limit=${size}`
+    const path = `.models/${dataFileName},${fileInfo}.json`;
 
     try {
         fs.writeFileSync(path, json);
@@ -73,11 +77,35 @@ yargs
                 describe: 'Limit',
                 demandOption: false,
                 type: 'int'
+            },
+            learningRate: {
+                describe: 'Learning rate',
+                demandOption: false,
+                default: 0.01,
+                type: 'float'
+            },
+            activationFunction: {
+                describe: 'Activation function',
+                demandOption: false,
+                default: "tanh",
+                type: 'string'
+            },
+            seed: {
+                describe: 'Random seed',
+                demandOption: false,
+                default: 42,
+                type: 'int'
+            },
+            neurons: {
+                describe: 'A layer of neurons (can be used multiple times)',
+                demandOption: false,
+                default: [100],
+                type: 'int'
             }
         },
-        handler({dataPath, dataLimit}) {
-            console.log("Training: ", dataPath, dataLimit);
-            train({dataPath, dataLimit});
+        handler(args) {
+            console.log("Training: ", args);
+            train(args);
         }
     })
     .command({
@@ -109,17 +137,30 @@ yargs
     .parse();
 
 
-function train({dataPath, dataLimit}) {
+function train({dataPath, dataLimit, learningRate, activationFunction, neurons, seed}) {
     if (!fs.existsSync(dataPath)) {
         return console.error(`Training data (${dataPath}) not found`);
     }
 
-    const app = Elm.Main.init({flags: {command: "train", fileName: dataPath}});
+    console.log('dataPath', dataPath);
+
+    const layers = Array.isArray(neurons) ? neurons : [neurons];
+
+    const app = Elm.Main.init({
+        flags: {
+            command: "train",
+            fileName: dataPath,
+            learningRate: learningRate,
+            activationFunction: activationFunction,
+            seed: seed,
+            layers: layers
+        }
+    });
 
     ConcurrentTask.register({
         tasks: {
             "cli:readMnistCsv": readMnistCsv(dataLimit),
-            "cli:saveModel": saveModel(dataLimit)
+            "cli:saveModel": saveModel({dataPath, dataLimit, learningRate, activationFunction, seed, layers})
         },
         ports: {
             send: app.ports.send,

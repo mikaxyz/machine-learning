@@ -12,18 +12,44 @@ import Port
 import Random
 import Task
 import Tasks exposing (TaskError, TaskSuccess(..))
-import XYZMika.ML.ActivationFunction as ActivationFunction
+import XYZMika.ML.ActivationFunction as ActivationFunction exposing (ActivationFunction(..))
 import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork)
 
 
 type alias Flags =
-    { fileName : String }
+    { fileName : String
+    , learningRate : Float
+    , activationFunction : ActivationFunction
+    , layers : List Int
+    , seed : Int
+    }
+
+
+activationFunctionDecoder : JD.Decoder ActivationFunction
+activationFunctionDecoder =
+    JD.string
+        |> JD.andThen
+            (\id ->
+                case id of
+                    "sigmoid" ->
+                        JD.succeed ActivationFunction.Sigmoid
+
+                    "tanh" ->
+                        JD.succeed ActivationFunction.Tanh
+
+                    _ ->
+                        JD.fail ("unknown value for ActivationFunction: " ++ id)
+            )
 
 
 flagsDecoder : JD.Decoder Flags
 flagsDecoder =
-    JD.map Flags
+    JD.map5 Flags
         (JD.field "fileName" JD.string)
+        (JD.field "learningRate" JD.float)
+        (JD.field "activationFunction" activationFunctionDecoder)
+        (JD.field "layers" (JD.list JD.int))
+        (JD.field "seed" JD.int)
 
 
 type Msg
@@ -70,17 +96,23 @@ initWithFlags flags =
                 , onComplete = OnComplete
                 }
                 (Tasks.readMnistCsv flags.fileName |> ConcurrentTask.map TrainingData)
+
+        addLayers : List Int -> NeuralNetwork.Configuration -> NeuralNetwork.Configuration
+        addLayers layers neuralNetwork =
+            layers
+                |> List.reverse
+                |> List.foldl (\neurons -> NeuralNetwork.addLayer { neurons = neurons }) neuralNetwork
     in
     ( { tasks = tasks
       , neuralNetwork =
             NeuralNetwork.configure
-                { randomSeed = Random.initialSeed 42
+                { randomSeed = Random.initialSeed flags.seed
                 , inputs = 784
                 , outputs = 10
                 }
-                |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
-                |> NeuralNetwork.withLearningRate 0.03
-                |> NeuralNetwork.addLayer { neurons = 100 }
+                |> NeuralNetwork.withActivationFunction flags.activationFunction
+                |> NeuralNetwork.withLearningRate flags.learningRate
+                |> addLayers flags.layers
                 |> NeuralNetwork.create
       , trainingData = []
       }
