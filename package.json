@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "extract-mnist-data": "mkdir -p .data && tar -xf data/mnist_train.csv.tgz -C .data && tar -xf data/mnist_test.csv.tgz -C .data",
     "build": "elm make src/Main.elm --output dist/main.js",
     "test": "elm-test",
     "train": "npm run build && ./index.js train --data-path=.data/mnist_train.csv --data-limit=100 --neurons=10",
