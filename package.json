@@ -7,8 +7,8 @@
   "scripts": {
     "build": "elm make src/Main.elm --output dist/main.js",
     "test": "elm-test",
-    "train": "npm run build && ./index.js train --data-path=.data/mnist_train.csv --data-limit=500 --neurons=20",
-    "test-model": "npm run build && ./index.js test --model-path=.models/mnist_train_csv,rate=0.01,fn=tanh,seed=42,layers=20,limit=500.json --data-path=.data/mnist_test.csv --data-limit=1000"
+    "train": "npm run build && ./index.js train --data-path=.data/mnist_train.csv --data-limit=100 --neurons=10",
+    "test-model": "npm run build && ./index.js test --model-path=.models/lr=0.01,af=tanh,in=784,out=10,l=[10].mnist_train_csv_100,.json --data-path=.data/mnist_test.csv --data-limit=100"
   },
   "author": "Mika Jauhonen",
   "license": "ISC",

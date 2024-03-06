@@ -8,6 +8,7 @@ module Tasks exposing
 import ConcurrentTask exposing (ConcurrentTask)
 import Json.Decode as JD
 import Json.Encode as JE
+import XYZMika.ML.ActivationFunction as ActivationFunction
 import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork)
 
 
@@ -45,8 +46,42 @@ saveModel neuralNetwork =
         { function = "cli:saveModel"
         , expect = ConcurrentTask.expectString
         , errors = ConcurrentTask.expectErrors decodeErrors
-        , args = NeuralNetwork.encode neuralNetwork
+        , args =
+            JE.object
+                [ ( "neuralNetwork", NeuralNetwork.encode neuralNetwork )
+                , ( "fileName", JE.string (neuralNetworkToFilename neuralNetwork) )
+                ]
         }
+
+
+neuralNetworkToFilename : NeuralNetwork -> String
+neuralNetworkToFilename neuralNetwork =
+    let
+        meta =
+            neuralNetwork
+                |> NeuralNetwork.meta
+
+        activationFunction =
+            case meta.activationFunction of
+                ActivationFunction.Tanh ->
+                    "tanh"
+
+                ActivationFunction.Sigmoid ->
+                    "sigmoid"
+
+        layers =
+            meta.layers
+                |> List.map String.fromInt
+                |> String.join ","
+    in
+    [ ( "lr", String.fromFloat meta.learningRate )
+    , ( "af", activationFunction )
+    , ( "in", String.fromInt meta.inputs )
+    , ( "out", String.fromInt meta.outputs )
+    , ( "l", "[" ++ layers ++ "]" )
+    ]
+        |> List.map (\( key, value ) -> key ++ "=" ++ value)
+        |> String.join ","
 
 
 imageDataFromString : String -> Result Int ImageData

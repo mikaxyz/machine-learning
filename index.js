@@ -38,20 +38,16 @@ const readModel = (modelPath) => {
 }
 
 
-const saveModel = ({dataPath, dataLimit, learningRate, activationFunction, seed, layers }) => (model) => {
-    console.log("cli:saveModel", model)
-    const json = JSON.stringify(model);
+const saveModel = (dataPath, dataLimit = "ALL") => ({fileName, neuralNetwork}) => {
+    console.log("cli:saveModel", neuralNetwork)
+    const json = JSON.stringify(neuralNetwork);
 
     if (!fs.existsSync(".models")) {
         fs.mkdirSync(".models");
     }
 
     const dataFileName = dataPath.split("/").at(-1).replace(".", "_");
-
-    const size = dataLimit || "ALL";
-    const layerInfo = layers.join("-");
-    const fileInfo = `rate=${learningRate},fn=${activationFunction},seed=${seed},layers=${layerInfo},limit=${size}`
-    const path = `.models/${dataFileName},${fileInfo}.json`;
+    const path = `.models/${fileName}.${dataFileName}_${dataLimit},.json`;
 
     try {
         fs.writeFileSync(path, json);
@@ -160,7 +156,7 @@ function train({dataPath, dataLimit, learningRate, activationFunction, neurons, 
     ConcurrentTask.register({
         tasks: {
             "cli:readMnistCsv": readMnistCsv(dataLimit),
-            "cli:saveModel": saveModel({dataPath, dataLimit, learningRate, activationFunction, seed, layers})
+            "cli:saveModel": saveModel(dataPath, dataLimit)
         },
         ports: {
             send: app.ports.send,

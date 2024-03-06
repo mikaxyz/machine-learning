@@ -4,6 +4,7 @@ module XYZMika.ML.NeuralNetwork exposing
     , train, TrainingData
     , predict
     , decoder, encode
+    , meta
     )
 
 {-| Neural Network
@@ -114,6 +115,45 @@ type Layer
         , inputs : Matrix
         , outputs : Matrix
         }
+
+
+type alias Meta =
+    { learningRate : Float
+    , activationFunction : ActivationFunction
+    , inputs : Int
+    , outputs : Int
+    , layers : List Int
+    }
+
+
+meta : NeuralNetwork -> Meta
+meta (NeuralNetwork neuralNetwork) =
+    let
+        col : ( Int, Int, List Int ) -> List Layer -> ( Int, Int, List Int )
+        col ( inputs_, outputs_, layers_ ) layers__ =
+            case layers__ of
+                [] ->
+                    ( inputs_, outputs_, layers_ )
+
+                (Layer layer) :: [] ->
+                    ( inputs_, layer.outputCount, layers_ )
+
+                (Layer layer) :: rest ->
+                    if inputs_ == 0 then
+                        col ( layer.inputCount, outputs_, layer.outputCount :: layers_ ) rest
+
+                    else
+                        col ( inputs_, outputs_, layer.inputCount :: layers_ ) rest
+
+        ( inputs, outputs, layers ) =
+            col ( 0, 0, [] ) neuralNetwork.layers
+    in
+    { learningRate = neuralNetwork.learningRate
+    , activationFunction = neuralNetwork.activationFunction
+    , inputs = inputs
+    , outputs = outputs
+    , layers = layers
+    }
 
 
 {-| NeuralNetwork
