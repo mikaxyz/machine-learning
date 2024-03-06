@@ -1,8 +1,10 @@
 module Tasks exposing
     ( TaskError
     , TaskSuccess(..)
+    , neuralNetworkToFilename
     , readMnistCsv
     , saveModel
+    , saveReport
     )
 
 import ConcurrentTask exposing (ConcurrentTask)
@@ -28,6 +30,12 @@ type alias ImageData =
     }
 
 
+type alias Report =
+    { neuralNetwork : NeuralNetwork
+    , content : String
+    }
+
+
 readMnistCsv : String -> ConcurrentTask TaskError (List ImageData)
 readMnistCsv fileName =
     ConcurrentTask.define
@@ -50,6 +58,21 @@ saveModel neuralNetwork =
             JE.object
                 [ ( "neuralNetwork", NeuralNetwork.encode neuralNetwork )
                 , ( "fileName", JE.string (neuralNetworkToFilename neuralNetwork) )
+                ]
+        }
+
+
+saveReport : Report -> ConcurrentTask TaskError String
+saveReport report =
+    ConcurrentTask.define
+        { function = "cli:saveReport"
+        , expect = ConcurrentTask.expectString
+        , errors = ConcurrentTask.expectErrors decodeErrors
+        , args =
+            JE.object
+                [ ( "neuralNetwork", NeuralNetwork.encode report.neuralNetwork )
+                , ( "fileName", JE.string (neuralNetworkToFilename report.neuralNetwork) )
+                , ( "content", JE.string report.content )
                 ]
         }
 

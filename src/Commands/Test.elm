@@ -108,7 +108,7 @@ update msg model =
         OnComplete (ConcurrentTask.Success (ModelSaved path)) ->
             let
                 _ =
-                    Debug.log "Saved model: " path
+                    Debug.log "Saved report: " path
             in
             ( model
             , Cmd.none
@@ -132,7 +132,6 @@ update msg model =
                     )
 
                 [] ->
-                    -- TODO: Save results
                     let
                         percentagesByLabel : Dict Int Float
                         percentagesByLabel =
@@ -155,48 +154,82 @@ update msg model =
                                     )
 
                         decimals =
-                            3
+                            2
 
-                        totalNumberOfDocuments =
+                        labels : List { label : Int, total : Int, correct : Int }
+                        labels =
                             model.results
                                 |> Dict.map
-                                    (\_ values ->
+                                    (\label values ->
                                         let
-                                            numberOfDocuments : Int
-                                            numberOfDocuments =
-                                                List.length values
-
-                                            total : Float
-                                            total =
-                                                numberOfDocuments
-                                                    |> toFloat
-
-                                            correct : Float
+                                            correct : Int
                                             correct =
                                                 values
                                                     |> List.filter identity
                                                     |> List.length
-                                                    |> toFloat
                                         in
-                                        ( numberOfDocuments, correct / total )
+                                        { label = label, total = List.length values, correct = correct }
                                     )
                                 |> Dict.toList
-                                |> List.sortBy Tuple.first
-                                |> List.reverse
-                                |> List.map (\( label, ( numberOfDocuments, value ) ) -> Debug.log (String.fromInt label ++ ":       " ++ (floatToPercentageDisplay decimals value ++ "         ")) numberOfDocuments)
+                                |> List.map Tuple.second
+
+                        totalNumberOfDocuments : Int
+                        totalNumberOfDocuments =
+                            labels
+                                |> List.map .total
                                 |> List.sum
 
-                        _ =
-                            Debug.log "__________________________" 0
+                        byLabel : { label : Int, total : Int, correct : Int } -> String
+                        byLabel { label, total, correct } =
+                            let
+                                ratio =
+                                    toFloat correct / toFloat total
+                            in
+                            (String.fromInt label ++ alignRightBy 15 (floatToPercentageDisplay decimals ratio)) ++ alignRight (String.fromInt total)
 
-                        _ =
+                        alignRightBy : Int -> String -> String
+                        alignRightBy n x =
+                            String.padLeft n ' ' x
+
+                        alignRight : String -> String
+                        alignRight x =
+                            String.padLeft 10 ' ' x
+
+                        totals : String
+                        totals =
                             (Dict.values percentagesByLabel |> List.sum)
                                 / (Dict.size percentagesByLabel |> toFloat)
                                 |> floatToPercentageDisplay decimals
-                                |> (\a -> Debug.log ("TOTAL:   " ++ a ++ "         ") totalNumberOfDocuments)
+                                |> (\a -> "TOTAL:" ++ alignRight a ++ alignRight (String.fromInt totalNumberOfDocuments))
+
+                        labelsReport =
+                            labels
+                                |> List.map byLabel
+                                |> String.join "\n"
+
+                        title =
+                            Tasks.neuralNetworkToFilename model.neuralNetwork
+
+                        report =
+                            [ title
+                            , "--------------------------"
+                            , "LABEL   ACCURACY     COUNT"
+                            , labelsReport
+                            , "--------------------------"
+                            , totals
+                            ]
+                                |> String.join "\n"
+
+                        ( tasks, cmd ) =
+                            ConcurrentTask.attempt
+                                { send = Port.send
+                                , pool = ConcurrentTask.pool
+                                , onComplete = OnComplete
+                                }
+                                (Tasks.saveReport { neuralNetwork = model.neuralNetwork, content = report } |> ConcurrentTask.map ModelSaved)
                     in
-                    ( model
-                    , Cmd.none
+                    ( { model | tasks = tasks }
+                    , cmd
                     )
 
         Test imageData ->
@@ -245,7 +278,7 @@ floatToPercentageDisplay d x =
             String.left d a |> String.padRight d '0'
 
         ints a =
-            String.left d a |> String.padLeft 3 ' '
+            String.left 3 a |> String.padLeft 3 ' '
     in
     case String.fromFloat (100 * x) |> String.split "." of
         [ integer, decimals ] ->

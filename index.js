@@ -58,6 +58,25 @@ const saveModel = (dataPath, dataLimit = "ALL") => ({fileName, neuralNetwork}) =
     }
 }
 
+const saveReport = (dataPath, dataLimit = "ALL") => ({fileName, content}) => {
+    console.log("saveReport", fileName, content)
+
+    if (!fs.existsSync(".reports")) {
+        fs.mkdirSync(".reports");
+    }
+
+    const dataFileName = dataPath.split("/").at(-1).replace(".", "_");
+    const path = `.reports/${fileName}.${dataFileName}_${dataLimit},.txt`;
+
+    try {
+        fs.writeFileSync(path, content);
+        return path;
+    } catch (e) {
+        console.error("cli:saveReport", e)
+        return {error: "IOError"};
+    }
+}
+
 yargs
     .command({
         command: 'train',
@@ -184,7 +203,8 @@ function test({modelPath, dataPath, dataLimit}) {
     ConcurrentTask.register({
         tasks: {
             "cli:readModel": readModel,
-            "cli:readMnistCsv": readMnistCsv(dataLimit)
+            "cli:readMnistCsv": readMnistCsv(dataLimit),
+            "cli:saveReport": saveReport(dataPath, dataLimit)
         },
         ports: {
             send: app.ports.send,
