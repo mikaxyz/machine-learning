@@ -47,7 +47,7 @@ const saveModel = (dataPath, dataLimit = "ALL") => ({fileName, neuralNetwork}) =
     }
 
     const dataFileName = dataPath.split("/").at(-1).replace(".", "_");
-    const path = `.models/${fileName}.${dataFileName}_${dataLimit},.json`;
+    const path = `.models/${fileName}.${dataFileName}_${dataLimit}.json`;
 
     try {
         fs.writeFileSync(path, json);
