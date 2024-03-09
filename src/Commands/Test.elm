@@ -12,6 +12,7 @@ import Json.Decode as JD
 import Port
 import Task
 import Tasks exposing (TaskError, TaskSuccess(..))
+import XYZMika.Debug
 import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork)
 
 
@@ -58,7 +59,7 @@ init flagsValue =
         Err error ->
             let
                 _ =
-                    Debug.log "Failed to decode flags for train command" (JD.errorToString error)
+                    XYZMika.Debug.log "Failed to decode flags for train command" (JD.errorToString error)
             in
             ( Err error, Cmd.none )
 
@@ -99,7 +100,7 @@ update msg model =
         OnComplete (ConcurrentTask.Success (TrainingData data)) ->
             let
                 _ =
-                    Debug.log "TestWithData" (List.length data)
+                    XYZMika.Debug.log "TestWithData" (List.length data)
             in
             ( { model | testData = data }
             , Task.succeed () |> Task.perform (\_ -> TestWithData)
@@ -108,7 +109,7 @@ update msg model =
         OnComplete (ConcurrentTask.Success (ModelSaved path)) ->
             let
                 _ =
-                    Debug.log "Saved report: " path
+                    XYZMika.Debug.log "Saved report: " path
             in
             ( model
             , Cmd.none
@@ -117,7 +118,7 @@ update msg model =
         OnComplete error ->
             let
                 _ =
-                    Debug.log "ERROR" error
+                    XYZMika.Debug.log "ERROR" error
             in
             ( model, Cmd.none )
 

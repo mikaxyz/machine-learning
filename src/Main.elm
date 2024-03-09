@@ -3,6 +3,7 @@ module Main exposing (main)
 import Commands.Test as Test
 import Commands.Train as Train
 import Json.Decode as JD
+import XYZMika.Debug
 
 
 type Msg
@@ -92,7 +93,7 @@ init flagsValue =
         Err error ->
             let
                 _ =
-                    Debug.log "Failed to decode flags" (JD.errorToString error)
+                    XYZMika.Debug.log "Failed to decode flags" (JD.errorToString error)
             in
             ( Err error, Cmd.none )
 

@@ -6,10 +6,11 @@
   "main": "index.js",
   "scripts": {
     "extract-mnist-data": "mkdir -p .data && tar -xf data/mnist_train.csv.tgz -C .data && tar -xf data/mnist_test.csv.tgz -C .data",
-    "build": "elm make src/Main.elm --output dist/main.js",
+    "build": "./src/XYZMika/Debug/run.sh && elm make src/Main.elm --output dist/main.js --optimize",
+    "build:dev": "./src/XYZMika/Debug/run.sh debug && elm make src/Main.elm --output dist/main.js",
     "test": "elm-test",
-    "train": "npm run build && ./index.js train --data-path=.data/mnist_train.csv --data-limit=100 --neurons=10",
-    "test-model": "npm run build && ./index.js test --model-path=.models/lr=0.01,af=tanh,in=784,out=10,l=[10].mnist_train_csv_100,.json --data-path=.data/mnist_test.csv --data-limit=100"
+    "train": "./index.js train --data-path=.data/mnist_train.csv --data-limit=100 --neurons=10",
+    "test-model": "./index.js test --model-path=.models/lr=0.3,af=sigmoid,in=784,out=10,l=[80,80].mnist_train_csv_100.json --data-path=.data/mnist_test.csv --data-limit=10000"
   },
   "author": "Mika Jauhonen",
   "license": "ISC",

@@ -12,6 +12,7 @@ import Port
 import Random
 import Task
 import Tasks exposing (TaskError, TaskSuccess(..))
+import XYZMika.Debug
 import XYZMika.ML.ActivationFunction as ActivationFunction exposing (ActivationFunction(..))
 import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork)
 
@@ -81,7 +82,7 @@ init flagsValue =
         Err error ->
             let
                 _ =
-                    Debug.log "Failed to decode flags for train command" (JD.errorToString error)
+                    XYZMika.Debug.log "Failed to decode flags for train command" (JD.errorToString error)
             in
             ( Err error, Cmd.none )
 
@@ -136,7 +137,7 @@ update msg model =
         OnComplete (ConcurrentTask.Success (TrainingData trainingData)) ->
             let
                 _ =
-                    Debug.log "TrainWithData" (List.length trainingData)
+                    XYZMika.Debug.log "TrainWithData" (List.length trainingData)
             in
             ( { model | trainingData = trainingData }
             , Task.succeed () |> Task.perform (\_ -> TrainWithData)
@@ -145,7 +146,7 @@ update msg model =
         OnComplete (ConcurrentTask.Success (ModelSaved path)) ->
             let
                 _ =
-                    Debug.log "Saved model: " path
+                    XYZMika.Debug.log "Saved model: " path
             in
             ( model
             , Cmd.none
@@ -154,7 +155,7 @@ update msg model =
         OnComplete error ->
             let
                 _ =
-                    Debug.log "ERROR" error
+                    XYZMika.Debug.log "ERROR" error
             in
             ( model, Cmd.none )
 
@@ -171,7 +172,7 @@ update msg model =
                 [] ->
                     let
                         --_ =
-                        --    Debug.log "TRAIN" imageData.label
+                        --    XYZMika.Debug.log "TRAIN" imageData.label
                         ( tasks, cmd ) =
                             ConcurrentTask.attempt
                                 { send = Port.send
@@ -187,7 +188,7 @@ update msg model =
         Train imageData ->
             --let
             --    _ =
-            --        Debug.log "TRAIN" imageData.label
+            --        XYZMika.Debug.log "TRAIN" imageData.label
             --in
             ( { model
                 | neuralNetwork =
