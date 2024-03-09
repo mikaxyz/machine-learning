@@ -143,7 +143,7 @@ meta (NeuralNetwork neuralNetwork) =
                         col ( layer.inputCount, outputs_, layer.outputCount :: layers_ ) rest
 
                     else
-                        col ( inputs_, outputs_, layer.inputCount :: layers_ ) rest
+                        col ( inputs_, outputs_, layer.outputCount :: layers_ ) rest
 
         ( inputs, outputs, layers ) =
             col ( 0, 0, [] ) neuralNetwork.layers
@@ -152,7 +152,7 @@ meta (NeuralNetwork neuralNetwork) =
     , activationFunction = neuralNetwork.activationFunction
     , inputs = inputs
     , outputs = outputs
-    , layers = layers
+    , layers = layers |> List.reverse
     }
 
 
