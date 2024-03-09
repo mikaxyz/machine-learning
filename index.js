@@ -51,6 +51,7 @@ const saveModel = (dataPath, dataLimit = "ALL") => ({fileName, neuralNetwork}) =
 
     try {
         fs.writeFileSync(path, json);
+        console.log(`Saved model: : "${path}"`);
         return path;
     } catch (e) {
         console.error("cli:saveModel", e)
