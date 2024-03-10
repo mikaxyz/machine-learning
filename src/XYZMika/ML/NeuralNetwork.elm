@@ -103,6 +103,7 @@ type NeuralNetwork
         { layers : List Layer
         , learningRate : Float
         , activationFunction : ActivationFunction
+        , iterations : Int
         }
 
 
@@ -123,6 +124,7 @@ type alias Meta =
     , inputs : Int
     , outputs : Int
     , layers : List Int
+    , iterations : Int
     }
 
 
@@ -153,6 +155,7 @@ meta (NeuralNetwork neuralNetwork) =
     , inputs = inputs
     , outputs = outputs
     , layers = layers |> List.reverse
+    , iterations = neuralNetwork.iterations
     }
 
 
@@ -181,6 +184,7 @@ create (Configuration config) =
         { layers = layers |> List.reverse
         , activationFunction = config.activationFunction
         , learningRate = config.learningRate
+        , iterations = 0
         }
 
 
@@ -245,8 +249,9 @@ createLayer randomSeed inputCount outputCount =
 Train the NeuralNetwork with some TrainingData
 -}
 train : TrainingData -> NeuralNetwork -> NeuralNetwork
-train trainingData neuralNetwork =
-    calculateValues { inputs = trainingData.inputs } neuralNetwork
+train trainingData (NeuralNetwork neuralNetwork) =
+    NeuralNetwork { neuralNetwork | iterations = neuralNetwork.iterations + 1 }
+        |> calculateValues { inputs = trainingData.inputs }
         |> trainWithValues trainingData
 
 
@@ -396,6 +401,7 @@ encode (NeuralNetwork neuralNetwork) =
         [ ( "layers", JE.list encodeLayer neuralNetwork.layers )
         , ( "learningRate", JE.float neuralNetwork.learningRate )
         , ( "activationFunction", encodeActivationFunction neuralNetwork.activationFunction )
+        , ( "iterations", JE.int neuralNetwork.iterations )
         ]
 
 
@@ -427,17 +433,19 @@ encodeActivationFunction activationFunction =
 
 decoder : JD.Decoder NeuralNetwork
 decoder =
-    JD.map3
-        (\layers learningRate activationFunction ->
+    JD.map4
+        (\layers learningRate activationFunction iterations ->
             NeuralNetwork
                 { layers = layers
                 , learningRate = learningRate
                 , activationFunction = activationFunction
+                , iterations = iterations
                 }
         )
         (JD.field "layers" (JD.list layerDecoder))
         (JD.field "learningRate" JD.float)
         (JD.field "activationFunction" activationFunctionDecoder)
+        (JD.field "iterations" JD.int)
 
 
 layerDecoder : JD.Decoder Layer

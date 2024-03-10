@@ -102,6 +102,7 @@ neuralNetworkToFilename neuralNetwork =
     , ( "in", String.fromInt meta.inputs )
     , ( "out", String.fromInt meta.outputs )
     , ( "l", "[" ++ layers ++ "]" )
+    , ( "i", String.fromInt meta.iterations )
     ]
         |> List.map (\( key, value ) -> key ++ "=" ++ value)
         |> String.join ","

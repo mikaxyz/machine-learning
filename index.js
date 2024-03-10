@@ -38,7 +38,7 @@ const readModel = (modelPath) => {
 }
 
 
-const saveModel = (dataPath, dataLimit = "ALL") => ({fileName, neuralNetwork}) => {
+const saveModel = (dataPath) => ({fileName, neuralNetwork}) => {
     console.log("cli:saveModel", neuralNetwork)
     const json = JSON.stringify(neuralNetwork);
 
@@ -47,7 +47,7 @@ const saveModel = (dataPath, dataLimit = "ALL") => ({fileName, neuralNetwork}) =
     }
 
     const dataFileName = dataPath.split("/").at(-1).replace(".", "_");
-    const path = `.models/${fileName}.${dataFileName}_${dataLimit}.json`;
+    const path = `.models/${fileName}.${dataFileName}.json`;
 
     try {
         fs.writeFileSync(path, json);
@@ -67,7 +67,7 @@ const saveReport = (dataPath, dataLimit = "ALL") => ({fileName, content}) => {
     }
 
     const dataFileName = dataPath.split("/").at(-1).replace(".", "_");
-    const path = `.reports/${fileName}.${dataFileName}_${dataLimit},.txt`;
+    const path = `.reports/${fileName}.${dataFileName}_${dataLimit}.txt`;
 
     try {
         fs.writeFileSync(path, content);
@@ -176,7 +176,7 @@ function train({dataPath, dataLimit, learningRate, activationFunction, neurons, 
     ConcurrentTask.register({
         tasks: {
             "cli:readMnistCsv": readMnistCsv(dataLimit),
-            "cli:saveModel": saveModel(dataPath, dataLimit)
+            "cli:saveModel": saveModel(dataPath)
         },
         ports: {
             send: app.ports.send,
