@@ -222,11 +222,15 @@ suite =
                             , inputs = 2
                             , outputs = 1
                             }
-                            |> NeuralNetwork.addLayer { neurons = 2 }
+                            |> NeuralNetwork.addLayer { neurons = 6 }
+                            |> NeuralNetwork.addLayer { neurons = 4 }
+                            --|> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
+                            --|> NeuralNetwork.withLearningRate 0.03
                             |> NeuralNetwork.create
-                            |> trainIt
+                            |> train
 
-                    trainIt neuralNetwork_ =
+                    train : NeuralNetwork -> NeuralNetwork
+                    train neuralNetwork_ =
                         randomTrainingDataSet 20000
                             |> List.foldl
                                 (\trainingData nn ->
@@ -234,7 +238,8 @@ suite =
                                 )
                                 neuralNetwork_
 
-                    output inputs =
+                    predict : List Float -> Float
+                    predict inputs =
                         neuralNetwork
                             |> NeuralNetwork.predict { inputs = inputs }
                             |> List.head
@@ -242,20 +247,188 @@ suite =
                 in
                 Expect.all
                     [ \_ ->
-                        output [ 0, 0 ]
-                            |> Expect.atMost 0.06
+                        predict [ 0, 0 ]
+                            |> Expect.atMost 0.01
                     , \_ ->
-                        output [ 0, 1 ]
-                            |> Expect.atLeast 0.95
+                        predict [ 0, 1 ]
+                            |> Expect.atLeast 0.99
                     , \_ ->
-                        output [ 1, 0 ]
-                            |> Expect.atLeast 0.95
+                        predict [ 1, 0 ]
+                            |> Expect.atLeast 0.99
                     , \_ ->
-                        output [ 1, 1 ]
-                            |> Expect.atMost 0.06
+                        predict [ 1, 1 ]
+                            |> Expect.atMost 0.01
                     , \_ ->
-                        output [ 0.8, 1 ]
-                            |> Expect.atMost 0.08
+                        predict [ 0.8, 1 ]
+                            |> Expect.atMost 0.01
+                    ]
+                    neuralNetwork
+        , test "can learn 0-3 binary to decimal" <|
+            \_ ->
+                let
+                    randomTrainingDataSet : Int -> List TrainingData
+                    randomTrainingDataSet size =
+                        Random.step
+                            (Random.list size (Random.int 0 3))
+                            (Random.initialSeed 666)
+                            |> Tuple.first
+                            |> List.map
+                                (\i ->
+                                    case i of
+                                        0 ->
+                                            TrainingData [ 0, 0 ] [ 0, 0, 0 ]
+
+                                        1 ->
+                                            TrainingData [ 0, 1 ] [ 0, 0, 1 ]
+
+                                        2 ->
+                                            TrainingData [ 1, 0 ] [ 0, 1, 0 ]
+
+                                        _ ->
+                                            TrainingData [ 1, 1 ] [ 1, 0, 0 ]
+                                )
+
+                    neuralNetwork : NeuralNetwork
+                    neuralNetwork =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 2
+                            , outputs = 3
+                            }
+                            --|> NeuralNetwork.addLayer { neurons = 10 }
+                            --|> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
+                            |> NeuralNetwork.withLearningRate 0.3
+                            |> NeuralNetwork.create
+                            |> train
+
+                    train : NeuralNetwork -> NeuralNetwork
+                    train neuralNetwork_ =
+                        randomTrainingDataSet 10000
+                            |> List.foldl
+                                (\trainingData nn ->
+                                    NeuralNetwork.train trainingData nn
+                                )
+                                neuralNetwork_
+
+                    predict : List Float -> List Float
+                    predict inputs =
+                        neuralNetwork
+                            |> NeuralNetwork.predict { inputs = inputs }
+                            |> List.map
+                                (\x ->
+                                    if x < 0.1 then
+                                        0
+
+                                    else if x > 0.9 then
+                                        1
+
+                                    else
+                                        x
+                                )
+                in
+                Expect.all
+                    [ \_ ->
+                        predict [ 0, 0 ]
+                            |> Expect.equalLists [ 0, 0, 0 ]
+                    , \_ ->
+                        predict [ 0, 1 ]
+                            |> Expect.equalLists [ 0, 0, 1 ]
+                    , \_ ->
+                        predict [ 1, 0 ]
+                            |> Expect.equalLists [ 0, 1, 0 ]
+                    , \_ ->
+                        predict [ 1, 1 ]
+                            |> Expect.equalLists [ 1, 0, 0 ]
+                    ]
+                    neuralNetwork
+        , test "can learn 0-7 binary to decimal" <|
+            \_ ->
+                let
+                    randomTrainingDataSet : Int -> List TrainingData
+                    randomTrainingDataSet size =
+                        Random.step
+                            (Random.list size (Random.int 0 9))
+                            (Random.initialSeed 666)
+                            |> Tuple.first
+                            |> List.map
+                                (\i ->
+                                    case i of
+                                        0 ->
+                                            TrainingData [ 0, 0, 0 ] [ 0, 0, 0, 0, 0, 0, 0 ]
+
+                                        1 ->
+                                            TrainingData [ 0, 0, 1 ] [ 0, 0, 0, 0, 0, 0, 1 ]
+
+                                        2 ->
+                                            TrainingData [ 0, 1, 0 ] [ 0, 0, 0, 0, 0, 1, 0 ]
+
+                                        3 ->
+                                            TrainingData [ 0, 1, 1 ] [ 0, 0, 0, 0, 1, 0, 0 ]
+
+                                        4 ->
+                                            TrainingData [ 1, 0, 0 ] [ 0, 0, 0, 1, 0, 0, 0 ]
+
+                                        5 ->
+                                            TrainingData [ 1, 0, 1 ] [ 0, 0, 1, 0, 0, 0, 0 ]
+
+                                        6 ->
+                                            TrainingData [ 1, 1, 0 ] [ 0, 1, 0, 0, 0, 0, 0 ]
+
+                                        _ ->
+                                            TrainingData [ 1, 1, 1 ] [ 1, 0, 0, 0, 0, 0, 0 ]
+                                )
+
+                    neuralNetwork : NeuralNetwork
+                    neuralNetwork =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 3
+                            , outputs = 7
+                            }
+                            --|> NeuralNetwork.addLayer { neurons = 3 }
+                            --|> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
+                            |> NeuralNetwork.withLearningRate 0.3
+                            |> NeuralNetwork.create
+                            |> train
+
+                    train : NeuralNetwork -> NeuralNetwork
+                    train neuralNetwork_ =
+                        randomTrainingDataSet 30000
+                            |> List.foldl
+                                (\trainingData nn ->
+                                    NeuralNetwork.train trainingData nn
+                                )
+                                neuralNetwork_
+
+                    predict : List Float -> List Float
+                    predict inputs =
+                        neuralNetwork
+                            |> NeuralNetwork.predict { inputs = inputs }
+                            |> List.map
+                                (\x ->
+                                    if x < 0.1 then
+                                        0
+
+                                    else if x > 0.9 then
+                                        1
+
+                                    else
+                                        x
+                                )
+                in
+                Expect.all
+                    [ \_ ->
+                        predict [ 0, 0, 0 ]
+                            |> Expect.equalLists [ 0, 0, 0, 0, 0, 0, 0 ]
+                    , \_ ->
+                        predict [ 0, 0, 1 ]
+                            |> Expect.equalLists [ 0, 0, 0, 0, 0, 0, 1 ]
+                    , \_ ->
+                        predict [ 0, 1, 0 ]
+                            |> Expect.equalLists [ 0, 0, 0, 0, 0, 1, 0 ]
+                    , \_ ->
+                        predict [ 0, 1, 1 ]
+                            |> Expect.equalLists [ 0, 0, 0, 0, 1, 0, 0 ]
                     ]
                     neuralNetwork
         , test "encodes/decodes" <|
