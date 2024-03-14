@@ -9,8 +9,8 @@
     "build": "./src/XYZMika/Debug/run.sh && elm make src/Main.elm --output dist/main.js --optimize",
     "build:dev": "./src/XYZMika/Debug/run.sh debug && elm make src/Main.elm --output dist/main.js",
     "test": "elm-test",
-    "train": "./index.js train --data-path=.data/mnist_train.csv --data-limit=100 --neurons=10",
-    "test-model": "./index.js test --model-path=.models/lr=0.01,af=tanh,in=784,out=10,l=[10],i=100.mnist_train_csv.json --data-path=.data/mnist_test.csv --data-limit=10000"
+    "train": "./index.js train --data-path=.data/mnist_train.csv --neurons=100",
+    "test-model": "./index.js test --model-path=models/lr=0.2,af=sigmoid,in=784,out=10,l=[100],i=60000.mnist_train_csv.json --data-path=.data/mnist_test.csv"
   },
   "author": "Mika Jauhonen",
   "license": "ISC",
