@@ -32,7 +32,11 @@ dFunc x =
 
 tanh : Float -> Float
 tanh x =
-    ((e ^ x) - (e ^ -x)) / ((e ^ x) + (e ^ -x))
+    let
+        ex = exp x
+        enx = exp (-x)
+    in
+    (ex - enx) / (ex + enx)
 
 
 dTanh : Float -> Float
