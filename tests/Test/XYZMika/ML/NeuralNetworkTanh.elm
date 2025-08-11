@@ -34,7 +34,7 @@ suite =
                             }
                             |> NeuralNetwork.addLayer { neurons = 2 }
                             |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
-                            |> NeuralNetwork.withLearningRate 0.3
+                            |> NeuralNetwork.withLearningRate 0.01
                             |> NeuralNetwork.create
                             |> train
 
