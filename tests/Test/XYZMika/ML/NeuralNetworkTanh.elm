@@ -23,7 +23,7 @@ suite =
 
                     trainingData : List TrainingData
                     trainingData =
-                        List.repeat 20000 baseSet |> List.concat
+                        List.repeat 10000 baseSet |> List.concat
 
                     neuralNetwork : NeuralNetwork
                     neuralNetwork =
@@ -32,10 +32,9 @@ suite =
                             , inputs = 2
                             , outputs = 1
                             }
-                            |> NeuralNetwork.addLayer { neurons = 6 }
-                            |> NeuralNetwork.addLayer { neurons = 4 }
+                            |> NeuralNetwork.addLayer { neurons = 2 }
                             |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
-                            |> NeuralNetwork.withLearningRate 0.2
+                            |> NeuralNetwork.withLearningRate 0.3
                             |> NeuralNetwork.create
                             |> train
 
