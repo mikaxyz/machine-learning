@@ -109,6 +109,34 @@ suite =
                         List.repeat 5 3
                 in
                 Expect.equalLists expected result
+        , test "has correct number of outputs with tanh" <|
+            \_ ->
+                let
+                    predictWith : { inputs : Int, outputs : Int } -> Int
+                    predictWith { inputs, outputs } =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = inputs
+                            , outputs = outputs
+                            }
+                            |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
+                            |> NeuralNetwork.create
+                            |> NeuralNetwork.predict { inputs = List.repeat inputs 0.5 }
+                            |> List.length
+
+                    result : List Int
+                    result =
+                        [ predictWith { inputs = 1, outputs = 3 }
+                        , predictWith { inputs = 2, outputs = 3 }
+                        , predictWith { inputs = 3, outputs = 3 }
+                        , predictWith { inputs = 4, outputs = 3 }
+                        , predictWith { inputs = 12, outputs = 3 }
+                        ]
+
+                    expected =
+                        List.repeat 5 3
+                in
+                Expect.equalLists expected result
         , test "has correct number of outputs with layers" <|
             \_ ->
                 let
@@ -137,6 +165,35 @@ suite =
                         List.repeat 5 3
                 in
                 Expect.equalLists expected result
+        , test "has correct number of outputs with layers and tanh" <|
+            \_ ->
+                let
+                    predictWith : { inputs : Int, outputs : Int } -> Int
+                    predictWith { inputs, outputs } =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = inputs
+                            , outputs = outputs
+                            }
+                            |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
+                            |> NeuralNetwork.addLayer { neurons = 3 }
+                            |> NeuralNetwork.create
+                            |> NeuralNetwork.predict { inputs = List.repeat inputs 0.5 }
+                            |> List.length
+
+                    result : List Int
+                    result =
+                        [ predictWith { inputs = 1, outputs = 3 }
+                        , predictWith { inputs = 2, outputs = 3 }
+                        , predictWith { inputs = 3, outputs = 3 }
+                        , predictWith { inputs = 4, outputs = 3 }
+                        , predictWith { inputs = 12, outputs = 3 }
+                        ]
+
+                    expected =
+                        List.repeat 5 3
+                in
+                Expect.equalLists expected result
         , test "can learn" <|
             \_ ->
                 let
@@ -147,6 +204,29 @@ suite =
                             , inputs = 2
                             , outputs = 1
                             }
+                            |> NeuralNetwork.create
+
+                    trained =
+                        neuralNetwork
+                            |> NeuralNetwork.train (TrainingData [ 1, 1 ] [ 0 ])
+                            |> NeuralNetwork.predict { inputs = [ 1, 1 ] }
+
+                    untrained =
+                        neuralNetwork
+                            |> NeuralNetwork.predict { inputs = [ 1, 1 ] }
+                in
+                Expect.notEqual untrained trained
+        , test "can learn with tanh" <|
+            \_ ->
+                let
+                    neuralNetwork : NeuralNetwork
+                    neuralNetwork =
+                        NeuralNetwork.configure
+                            { randomSeed = Random.initialSeed 42
+                            , inputs = 2
+                            , outputs = 1
+                            }
+                            |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
                             |> NeuralNetwork.create
 
                     trained =
