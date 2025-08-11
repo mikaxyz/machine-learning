@@ -33,7 +33,8 @@ dFunc x =
 tanh : Float -> Float
 tanh x =
     let
-        t = ((e ^ x) - (e ^ -x)) / ((e ^ x) + (e ^ -x))
+        t =
+            ((e ^ x) - (e ^ -x)) / ((e ^ x) + (e ^ -x))
     in
     (t + 1) / 2
 
@@ -44,7 +45,8 @@ dTanh y =
     -- where y = (t + 1) / 2 and t = tanh(z), thus t = 2y - 1
     -- dy/dz = (1/2) * (1 - t^2)
     let
-        t = 2 * y - 1
+        t =
+            2 * y - 1
     in
     0.5 * (1 - (t * t))
 
