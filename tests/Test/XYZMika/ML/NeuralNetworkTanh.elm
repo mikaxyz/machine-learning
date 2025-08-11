@@ -10,16 +10,15 @@ import XYZMika.ML.NeuralNetwork as NeuralNetwork exposing (NeuralNetwork, Traini
 suite : Test
 suite =
     Test.concat
-        [ test "can learn to be XOR gate (tanh, centered)" <|
+        [ test "can learn to be XOR gate (tanh 0..1)" <|
             \_ ->
                 let
-                    -- XOR over centered inputs/targets for tanh
                     baseSet : List TrainingData
                     baseSet =
-                        [ TrainingData [ -1, -1 ] [ -1 ]
-                        , TrainingData [ -1, 1 ] [ 1 ]
-                        , TrainingData [ 1, -1 ] [ 1 ]
-                        , TrainingData [ 1, 1 ] [ -1 ]
+                        [ TrainingData [ 0, 0 ] [ 0 ]
+                        , TrainingData [ 0, 1 ] [ 1 ]
+                        , TrainingData [ 1, 0 ] [ 1 ]
+                        , TrainingData [ 1, 1 ] [ 0 ]
                         ]
 
                     trainingData : List TrainingData
@@ -36,7 +35,7 @@ suite =
                             |> NeuralNetwork.addLayer { neurons = 6 }
                             |> NeuralNetwork.addLayer { neurons = 4 }
                             |> NeuralNetwork.withActivationFunction ActivationFunction.Tanh
-                            |> NeuralNetwork.withLearningRate 0.1
+                            |> NeuralNetwork.withLearningRate 0.2
                             |> NeuralNetwork.create
                             |> train
 
@@ -54,17 +53,17 @@ suite =
                 in
                 Expect.all
                     [ \_ ->
-                        predict [ -1, -1 ]
-                            |> Expect.atMost -0.9
+                        predict [ 0, 0 ]
+                            |> Expect.atMost 0.1
                     , \_ ->
-                        predict [ -1, 1 ]
+                        predict [ 0, 1 ]
                             |> Expect.atLeast 0.9
                     , \_ ->
-                        predict [ 1, -1 ]
+                        predict [ 1, 0 ]
                             |> Expect.atLeast 0.9
                     , \_ ->
                         predict [ 1, 1 ]
-                            |> Expect.atMost -0.9
+                            |> Expect.atMost 0.1
                     ]
                     ()
         ]
