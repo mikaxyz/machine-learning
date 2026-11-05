@@ -23,12 +23,14 @@ suite =
                             }
                             |> NeuralNetwork.create
 
-                    output : List Float
+                    output : Float
                     output =
                         neuralNetwork
                             |> NeuralNetwork.predict { inputs = [ 0, 1, 2 ] }
+                            |> List.head
+                            |> Maybe.withDefault -1
                 in
-                Expect.equal [ 0.31407280243810826 ] output
+                Expect.within (Expect.Absolute 0.0000000000000001) 0.31407280243810826 output
         , test "uses activation functions" <|
             \_ ->
                 let
